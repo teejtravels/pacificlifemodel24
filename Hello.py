@@ -520,7 +520,6 @@ def plot_sharpe_ratio_heatmap_with_top3(results):
 
 ### Import equities data
 """
-
 large_cap_growth = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_RLG.xlsx")
 large_cap_value = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_RLV.xlsx")
 mid_cap_growth = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_RDG.xlsx")

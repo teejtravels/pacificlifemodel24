@@ -59,10 +59,10 @@ def process_data(file_name):
 
     return df
 
-"""# Scoring System Functions
+# Scoring System Functions
 
 ### Score Calculation Functions
-"""
+
 
 def calculate_value(data):
     """
@@ -182,7 +182,7 @@ def calculate_final_score(data):
 
     return final_score
 
-"""### Display Results Functions"""
+### Display Results Functions
 
 def print_result(data):
     """
@@ -237,12 +237,12 @@ def plot_scores(data):
         # a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
         return fig
 
-"""# Backtesting Functions
+# Backtesting Functions
 
 ## Using Average Returns
 
 #### Calculate Avg Returns Function
-"""
+
 
 def calculate_return(df_list, names):
     """
@@ -282,7 +282,7 @@ def calculate_return(df_list, names):
 
     return results_df
 
-"""### Line Chart"""
+### Line Chart
 
 def plot_avg_return_line_chart(results):
     """
@@ -318,7 +318,7 @@ def plot_avg_return_line_chart(results):
     # a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
     return fig 
 
-"""### Heat Maps"""
+### Heat Maps
 
 def plot_returns_heatmap(results):
     """
@@ -427,10 +427,10 @@ def plot_avg_return_heatmap_with_top3(results):
 
     return fig
 
-"""## Using Sharpe Ratio
+## Using Sharpe Ratio
 
 ### Sharpe Ratio Results
-"""
+
 
 def get_treasury_bill_rate():
     # Fetch the Treasury bill rate using Yahoo Finance API
@@ -521,10 +521,10 @@ def plot_sharpe_ratio_heatmap_with_top3(results):
 # returns fig so we can use this later on in the layout 
     return fig
 
-"""# Equities
+# Equities
 
 ### Import equities data
-"""
+
 large_cap_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RLG.xlsx")
 large_cap_value = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RLV.xlsx")
 mid_cap_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RDG.xlsx")
@@ -539,60 +539,91 @@ emerging_markets = process_data("/workspaces/pacificlifemodel24/streamlit/data/2
 """#Bangyangs updates below this line"""
 
 
-categories = {
-    "RLG": "large_cap_growth",
-    "RLV": "large_cap_value",
-    "RDG": "mid_cap_growth",
-    "RMV": "mid_cap_value",
-    "RUO": "small_cap_growth",
-    "RUJ": "small_cap_value",
-    "MXEA000G": "international_growth",
-    "MXEA000V": "international_value",
-    "SBERWUU": "international_small_cap",
-    "MXEF": "emerging_markets"
-}
+#categories = {
+#    "RLG": "large_cap_growth",
+#    "RLV": "large_cap_value",
+#    "RDG": "mid_cap_growth",
+#    "RMV": "mid_cap_value",
+#    "RUO": "small_cap_growth",
+#    "RUJ": "small_cap_value",
+#    "MXEA000G": "international_growth",
+#    "MXEA000V": "international_value",
+#    "SBERWUU": "international_small_cap",
+#    "MXEF": "emerging_markets"
+#}
 
-uploaded_file = st.sidebar.file_uploader("Upload to replace equity data:", type=['xlsx'])
+#uploaded_file = st.sidebar.file_uploader("Upload to replace equity data:", type=['xlsx'])
 
-if uploaded_file:
-    file_category = None
-    # Determine which category the file belongs to based on its name
-    for key, value in categories.items():
-        if key in uploaded_file.name:
-            file_category = value
-            break
+#if uploaded_file:
+#    file_category = None
+#    # Determine which category the file belongs to based on its name
+#    for key, value in categories.items():
+#        if key in uploaded_file.name:
+#            file_category = value
+#            break
     
-    if file_category:
-        # Process and update the specific category data
-        equity_data[file_category] = process_data(uploaded_file)
-        st.success(f"Updated data for {file_category}.")
-    else:
-        st.error("The uploaded file does not match any recognized category.")
+#    if file_category:
+#        # Process and update the specific category data
+#        equity_data[file_category] = process_data(uploaded_file)
+#        st.success(f"Updated data for {file_category}.")
+#    else:
+#        st.error("The uploaded file does not match any recognized category.")
 
 
 """#Bangyangs updates above this line"""
 
 equities = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, small_cap_growth, small_cap_value, international_growth, international_value, international_small_cap, emerging_markets]
 
-"""### Parameters (configure before running functions will modify these to be editable from streamlit page)"""
+### Parameters (configure before running functions will modify these to be editable from streamlit page)
 
 # years determines the timeframe of the data, i.e. the last 5 years, 10 years, etc.
-years = 10
+years = st.slider(
+    "Select the number of years:",
+    min_value=5,  
+    max_value=20,  
+    value=10,  
+    step=5  
+)
 
 # set weights parameters
 value_weight = 0.4
 growth_weight = 0.4
-sentiment_weight = 0.3
+sentiment_weight = 0.2
+
+
+# Define default values for weights
+if 'value_weight' not in st.session_state:
+    st.session_state['value_weight'] = 0.4
+if 'growth_weight' not in st.session_state:
+    st.session_state['growth_weight'] = 0.4
+if 'sentiment_weight' not in st.session_state:
+    st.session_state['sentiment_weight'] = 0.2
+
+def validate_weights():
+    total = st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight
+    if total != 1.0:
+        diff = 1.0 - total
+        st.session_state.sentiment_weight += diff
+        st.error("The total of weights has been adjusted to 1.0 by modifying the sentiment weight.")
+
+# Creating number inputs for weights
+st.number_input("Value Weight", min_value=0.0, max_value=1.0, value=st.session_state.value_weight, key='value_weight', on_change=validate_weights)
+st.number_input("Growth Weight", min_value=0.0, max_value=1.0, value=st.session_state.growth_weight, key='growth_weight', on_change=validate_weights)
+st.number_input("Sentiment Weight", min_value=0.0, max_value=1.0, value=st.session_state.sentiment_weight, key='sentiment_weight', on_change=validate_weights)
+
+# Displaying the current weights and their sum
+st.write(f"Total: {st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight}")
 
 # Set names of the asset classes
 names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 'Small Cap Value', 'International Growth', 'International Value', 'International Small Cap', 'Emerging Markets']
 
-"""### Scores of equity assets"""
+### Scores of equity assets
+
 
 # Plot the scores
 plot_scores(equities)
 
-"""### Backtesting on Equities"""
+### Backtesting on Equities
 
 # Establish names of each column for returns backtest
 names = ["AVG Return of Large-Cap Growth(%)", "AVG Return of Large-Cap Value(%)", "AVG Return of Mid-Cap Growth(%)", "AVG Return of Mid-Cap Value(%)", "AVG Return of Small-Cap Growth(%)", "AVG Return of Small-Cap Value(%)" , "AVG Return of International Growth(%)", "AVG Return of International Value(%)", "AVG Return of International Small Cap(%)", "AVG Return of Emerging Markets(%)"]
@@ -604,10 +635,10 @@ display(equities_results)
 display(plot_avg_return_heatmap_with_top3(equities_results))
 display(plot_avg_return_line_chart(equities_results))
 
-"""## Forecasting Next Month's Return
+## Forecasting Next Month's Return
 
 ### Model 1: Random Forest
-"""
+
 
 def train_and_evaluate_rf(data, asset_name, target_column, test_size=0.2, random_state=42, n_estimators=100):
     # Prepare the features (X) and the target (y)
@@ -642,7 +673,7 @@ def forecast_returns_rf(dataframes, asset_names, target_column):
 
     return results
 
-"""### Results"""
+### Results
 
 # Target column name
 target_column = 'Monthly Return(%)'
@@ -654,7 +685,7 @@ asset_names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap
 # Forecast returns for all assets
 forecast_results = forecast_returns_rf(dataframes, asset_names, target_column)
 
-"""### Model 2: Stacked Random Forest Model via SVR"""
+### Model 2: Stacked Random Forest Model via SVR
 
 def train_and_evaluate_svr(data, asset_name, target_column, test_size=0.2, random_state=42, n_estimators=100):
     # Prepare the features (X) and the target (y)
@@ -710,9 +741,9 @@ asset_names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap
 # Forecast returns for all assets
 forecast_results = forecast_returns_svr(dataframes, asset_names, target_column)
 
-"""# Fixed Income
+# Fixed Income
 ## Macro- Indicators
-"""
+
 
 start_date = '2002-01-01'  # 20 years ago
 end_date = '2024-04-17'
@@ -734,18 +765,30 @@ inflation = inflation.resample('M').last()
 inflation['YoY Inflation Rate (%)'] = inflation['CPIAUCNS'].pct_change(12) * 100
 
 inflation.tail()
+#Below this is streamlit stuff
+
 
 ## This is the new streamlit layout, everything above is the model code##
 tab1, tab2 = st.tabs(["📈 Chart", "🗃 Data"])
 #fig = plot_scores(data)
 #tab1.st.plotly_chart(fig)
+with tab1:
+    if st.button('Show Scores'):
+        fig = plot_scores(equities)
+        st.plotly_chart(fig)
+
+    # Another tab for displaying something else, e.g., raw data or different analysis
+with tab2:
+    st.write("This tab can display data or other information.")
+    st.write("You can add more tabs as needed.")
 
 
 
 
 
 
-##Below this line is the Origional dashboard ###  above is model code### 
+
+##Below this line is the Origional dashboard ### 
 
 import streamlit as st
 from datetime import datetime

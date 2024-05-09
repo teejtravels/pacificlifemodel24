@@ -5,7 +5,7 @@ import scipy.stats as stats
 import yfinance as yf  # Install using: pip install yfinance
 from datetime import datetime, timedelta
 import pandas_datareader as pdr
-
+from IPython.display import display
 from sklearn.ensemble import RandomForestRegressor, StackingRegressor, GradientBoostingRegressor
 from sklearn.svm import SVR
 from sklearn.model_selection import train_test_split
@@ -231,7 +231,9 @@ def plot_scores(data):
         fig = px.bar(scores_df, y=x_labels, x=category, color='color', orientation='h', title=f'Scores of Asset Classes for {category}',
                      color_discrete_map={'Highest Score': 'blue', 'Other Scores': 'darkgray'},
                      text=scores_df[category].round(2))
-        fig.show()
+        #currently spits out the figure plot in streamlit- need to update to just 'fig' and then use 
+        # a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
+        st.plotly_chart(fig)
 
 """# Backtesting Functions
 
@@ -310,8 +312,9 @@ def plot_avg_return_line_chart(results):
         legend_title='Asset',
         xaxis=dict(type='category')  # Treat timeframes as categorical data for consistent spacing
     )
-
-    fig.show()
+    #currently spits out the figure plot in streamlit- need to update to just 'fig' and then use 
+    # a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
+    st.plotly_chart(fig)
 
 """### Heat Maps"""
 
@@ -366,7 +369,7 @@ def plot_returns_heatmap(results):
         height=400,  # Set height to 400 pixels
     )
 
-    fig.show()
+    st.plotly_chart(fig)
 
 
 def plot_avg_return_heatmap_with_top3(results):
@@ -420,7 +423,7 @@ def plot_avg_return_heatmap_with_top3(results):
         height=400
     )
 
-    fig.show()
+    st.plotly_chart(fig)
 
 """## Using Sharpe Ratio
 
@@ -513,29 +516,30 @@ def plot_sharpe_ratio_heatmap_with_top3(results):
         width=1200,
         height=400
     )
-
-    fig.show()
+#currently spits out the figure plot in streamlit- need to update to just 'fig' and then use
+# a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
+    st.plotly_chart(fig)
 
 """# Equities
 
 ### Import equities data
 """
-large_cap_growth = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_RLG.xlsx")
-large_cap_value = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_RLV.xlsx")
-mid_cap_growth = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_RDG.xlsx")
-mid_cap_value = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_RMV.xlsx")
-small_cap_growth = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_RUO.xlsx")
-small_cap_value = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_RUJ.xlsx")
-international_growth = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_MXEA000G.xlsx")
-international_value = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_MXEA000V.xlsx")
-international_small_cap = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_SBERWUU.xlsx")
-emerging_markets = process_data("/workspaces/pacificlifeuci2024/data/20y_monthly_MXEF.xlsx")
+large_cap_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RLG.xlsx")
+large_cap_value = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RLV.xlsx")
+mid_cap_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RDG.xlsx")
+mid_cap_value = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RMV.xlsx")
+small_cap_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RUO.xlsx")
+small_cap_value = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RUJ.xlsx")
+international_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_MXEA000G.xlsx")
+international_value = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_MXEA000V.xlsx")
+international_small_cap = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_SBERWUU.xlsx")
+emerging_markets = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_MXEF.xlsx")
 
 
 # Store the dataframes in a list
 equities = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, small_cap_growth, small_cap_value, international_growth, international_value, international_small_cap, emerging_markets]
 
-"""### Parameters (configure before running functions)"""
+"""### Parameters (configure before running functions will modify these to be editable from streamlit page)"""
 
 # years determines the timeframe of the data, i.e. the last 5 years, 10 years, etc.
 years = 10
@@ -726,9 +730,9 @@ def pe_ratio_plot(df, filename):
 
 
 # sets the page as wide mode
-st.set_page_config(layout="wide")
+#st.set_page_config(layout="wide")
 # Title of the app
-st.title('Pacific Life Asset Comparison App')
+#st.title('Pacific Life Asset Comparison App')
 
 
 

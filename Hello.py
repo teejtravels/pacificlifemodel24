@@ -542,12 +542,58 @@ equities = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, sm
 """### Parameters (configure before running functions will modify these to be editable from streamlit page)"""
 
 # years determines the timeframe of the data, i.e. the last 5 years, 10 years, etc.
-years = 10
+years = st.number_input(
+    "Select the number of years:", 
+    min_value=5,  # Minimum value
+    max_value=20,  # Maximum value
+    value=10,  # Default value
+    step=5  # Incremental step
+)
 
 # set weights parameters
 value_weight = 0.4
 growth_weight = 0.4
 sentiment_weight = 0.3
+
+def adjust_weights(changed, value, growth, sentiment):
+    total = value + growth + sentiment
+    if changed == 'value':
+        remaining = 1 - value
+        if total <= 1:
+            growth = remaining * (growth / (growth + sentiment))
+            sentiment = remaining * (sentiment / (growth + sentiment))
+        else:
+            growth = growth - (total - 1) * (growth / (growth + sentiment))
+            sentiment = sentiment - (total - 1) * (sentiment / (growth + sentiment))
+    elif changed == 'growth':
+        remaining = 1 - growth
+        if total <= 1:
+            value = remaining * (value / (value + sentiment))
+            sentiment = remaining * (sentiment / (value + sentiment))
+        else:
+            value = value - (total - 1) * (value / (value + sentiment))
+            sentiment = sentiment - (total - 1) * (sentiment / (value + sentiment))
+    elif changed == 'sentiment':
+        remaining = 1 - sentiment
+        if total <= 1:
+            value = remaining * (value / (value + growth))
+            growth = remaining * (growth / (value + growth))
+        else:
+            value = value - (total - 1) * (value / (value + growth))
+            growth = growth - (total - 1) * (growth / (value + growth))
+    return value, growth, sentiment
+
+value_weight = st.slider("Value Weight", min_value=0.0, max_value=1.0, value=value_weight, step=0.01, on_change=adjust_weights, args=('value', value_weight, growth_weight, sentiment_weight))
+growth_weight = st.slider("Growth Weight", min_value=0.0, max_value=1.0, value=growth_weight, step=0.01, on_change=adjust_weights, args=('growth', value_weight, growth_weight, sentiment_weight))
+sentiment_weight = st.slider("Sentiment Weight", min_value=0.0, max_value=1.0, value=sentiment_weight, step=0.01, on_change=adjust_weights, args=('sentiment', value_weight, growth_weight, sentiment_weight))
+
+# Adjust weights dynamically
+value_weight, growth_weight, sentiment_weight = adjust_weights('initial', value_weight, growth_weight, sentiment_weight)
+
+st.write("Total of weights:", value_weight + growth_weight + sentiment_weight)
+st.write("Value Weight:", value_weight)
+st.write("Growth Weight:", growth_weight)
+st.write("Sentiment Weight:", sentiment_weight)
 
 # Set names of the asset classes
 names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 'Small Cap Value', 'International Growth', 'International Value', 'International Small Cap', 'Emerging Markets']

@@ -15,7 +15,9 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 
-"""### Data preprocess function"""
+
+
+### Data preprocess function
 
 def process_data(file_name):
     """
@@ -233,7 +235,7 @@ def plot_scores(data):
                      text=scores_df[category].round(2))
         #currently spits out the figure plot in streamlit- need to update to just 'fig' and then use 
         # a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
-        st.plotly_chart(fig)
+        return fig
 
 """# Backtesting Functions
 
@@ -314,7 +316,7 @@ def plot_avg_return_line_chart(results):
     )
     #currently spits out the figure plot in streamlit- need to update to just 'fig' and then use 
     # a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
-    st.plotly_chart(fig)
+    return fig 
 
 """### Heat Maps"""
 
@@ -369,7 +371,7 @@ def plot_returns_heatmap(results):
         height=400,  # Set height to 400 pixels
     )
 
-    st.plotly_chart(fig)
+    return fig
 
 
 def plot_avg_return_heatmap_with_top3(results):
@@ -423,7 +425,7 @@ def plot_avg_return_heatmap_with_top3(results):
         height=400
     )
 
-    st.plotly_chart(fig)
+    return fig
 
 """## Using Sharpe Ratio
 
@@ -516,9 +518,8 @@ def plot_sharpe_ratio_heatmap_with_top3(results):
         width=1200,
         height=400
     )
-#currently spits out the figure plot in streamlit- need to update to just 'fig' and then use
-# a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
-    st.plotly_chart(fig)
+# returns fig so we can use this later on in the layout 
+    return fig
 
 """# Equities
 
@@ -535,8 +536,42 @@ international_value = process_data("/workspaces/pacificlifemodel24/streamlit/dat
 international_small_cap = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_SBERWUU.xlsx")
 emerging_markets = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_MXEF.xlsx")
 
+"""#Bangyangs updates below this line"""
 
-# Store the dataframes in a list
+
+categories = {
+    "RLG": "large_cap_growth",
+    "RLV": "large_cap_value",
+    "RDG": "mid_cap_growth",
+    "RMV": "mid_cap_value",
+    "RUO": "small_cap_growth",
+    "RUJ": "small_cap_value",
+    "MXEA000G": "international_growth",
+    "MXEA000V": "international_value",
+    "SBERWUU": "international_small_cap",
+    "MXEF": "emerging_markets"
+}
+
+uploaded_file = st.sidebar.file_uploader("Upload to replace equity data:", type=['xlsx'])
+
+if uploaded_file:
+    file_category = None
+    # Determine which category the file belongs to based on its name
+    for key, value in categories.items():
+        if key in uploaded_file.name:
+            file_category = value
+            break
+    
+    if file_category:
+        # Process and update the specific category data
+        equity_data[file_category] = process_data(uploaded_file)
+        st.success(f"Updated data for {file_category}.")
+    else:
+        st.error("The uploaded file does not match any recognized category.")
+
+
+"""#Bangyangs updates above this line"""
+
 equities = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, small_cap_growth, small_cap_value, international_growth, international_value, international_small_cap, emerging_markets]
 
 """### Parameters (configure before running functions will modify these to be editable from streamlit page)"""
@@ -700,6 +735,10 @@ inflation['YoY Inflation Rate (%)'] = inflation['CPIAUCNS'].pct_change(12) * 100
 
 inflation.tail()
 
+## This is the new streamlit layout, everything above is the model code##
+tab1, tab2 = st.tabs(["📈 Chart", "🗃 Data"])
+#fig = plot_scores(data)
+#tab1.st.plotly_chart(fig)
 
 
 

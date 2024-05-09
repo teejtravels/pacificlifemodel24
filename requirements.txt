@@ -4,3 +4,7 @@ pandas
 pydeck
 streamlit
 matplotlib
+scipy
+seaborn
+openpyxl
+pandas_datareader

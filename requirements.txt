@@ -10,3 +10,6 @@ openpyxl
 pandas_datareader
 yfinance
 scikit-learn
+plotly.express
+plotly
+

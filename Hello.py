@@ -769,13 +769,12 @@ inflation.tail()
 
 
 ## This is the new streamlit layout, everything above is the model code##
-tab1, tab2 = st.tabs(["📈 Chart", "🗃 Data"])
+tab1, tab2, tab3, tab4 = st.tabs(["📈 Chart", "🗃 settings", "EDA", "holding"])
 #fig = plot_scores(data)
 #tab1.st.plotly_chart(fig)
 with tab1:
-    if st.button('Show Scores'):
-        fig = plot_scores(equities)
-        st.plotly_chart(fig)
+    fig = plot_scores(equities)
+    st.plotly_chart(fig)
 
     # Another tab for displaying something else, e.g., raw data or different analysis
 with tab2:

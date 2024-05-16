@@ -12,4 +12,4 @@ yfinance
 scikit-learn
 plotly.express
 plotly
-
+os

@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestRegressor, StackingRegressor, GradientB
 from sklearn.svm import SVR
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
-
+import os
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
@@ -30,6 +30,9 @@ def process_data(file_name):
     Returns:
     df (pd.DataFrame): The processed DataFrame.
     """
+    base_path = os.path.dirname(__file__)  
+    full_Path = os.path.join(base_path, file_name)
+
     # Read the data
     df = pd.read_excel(file_name)
 
@@ -525,17 +528,16 @@ def plot_sharpe_ratio_heatmap_with_top3(results):
 
 ### Import equities data
 
-large_cap_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RLG.xlsx")
-large_cap_value = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RLV.xlsx")
-mid_cap_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RDG.xlsx")
-mid_cap_value = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RMV.xlsx")
-small_cap_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RUO.xlsx")
-small_cap_value = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_RUJ.xlsx")
-international_growth = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_MXEA000G.xlsx")
-international_value = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_MXEA000V.xlsx")
-international_small_cap = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_SBERWUU.xlsx")
-emerging_markets = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_MXEF.xlsx")
-
+large_cap_growth = process_data("streamlit/data/20y_monthly_RLG.xlsx")
+large_cap_value = process_data("streamlit/data/20y_monthly_RLV.xlsx")
+mid_cap_growth = process_data("streamlit/data/20y_monthly_RDG.xlsx")
+mid_cap_value = process_data("streamlit/data/20y_monthly_RMV.xlsx")
+small_cap_growth = process_data("streamlit/data/20y_monthly_RUO.xlsx")
+small_cap_value = process_data("streamlit/data/20y_monthly_RUJ.xlsx")
+international_growth = process_data("streamlit/data/20y_monthly_MXEA000G.xlsx")
+international_value = process_data("streamlit/data/20y_monthly_MXEA000V.xlsx")
+international_small_cap = process_data("streamlit/data/20y_monthly_SBERWUU.xlsx")
+emerging_markets = process_data("streamlit/data/20y_monthly_MXEF.xlsx")
 #Bangyangs updates below this line
 
 

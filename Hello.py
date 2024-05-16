@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
-import yfinance as yf  # Install using: pip install yfinance
+#import yfinance as yf  # Install using: pip install yfinance
 from datetime import datetime, timedelta
 import pandas_datareader as pdr
 from IPython.display import display

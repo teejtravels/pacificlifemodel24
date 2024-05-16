@@ -5,7 +5,7 @@ import scipy.stats as stats
 #import yfinance as yf  # Install using: pip install yfinance
 from datetime import datetime, timedelta
 import pandas_datareader as pdr
-from IPython.display import display
+#from IPython.display import display
 from sklearn.ensemble import RandomForestRegressor, StackingRegressor, GradientBoostingRegressor
 from sklearn.svm import SVR
 from sklearn.model_selection import train_test_split
@@ -602,10 +602,11 @@ names = ["AVG Return of Large-Cap Growth(%)", "AVG Return of Large-Cap Value(%)"
 
 
 equities_results = calculate_return(equities, names)
-
-display(equities_results)
-display(plot_avg_return_heatmap_with_top3(equities_results))
-display(plot_avg_return_line_chart(equities_results))
+#I replaced "display()" with st.write() to see if it works
+#this worked because the way streamlit reads things is different than IPython.
+st.write(equities_results)
+st.write(plot_avg_return_heatmap_with_top3(equities_results))
+st.write(plot_avg_return_line_chart(equities_results))
 
 ## Forecasting Next Month's Return
 

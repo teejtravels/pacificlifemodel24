@@ -536,7 +536,7 @@ international_value = process_data("/workspaces/pacificlifemodel24/streamlit/dat
 international_small_cap = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_SBERWUU.xlsx")
 emerging_markets = process_data("/workspaces/pacificlifemodel24/streamlit/data/20y_monthly_MXEF.xlsx")
 
-"""#Bangyangs updates below this line"""
+#Bangyangs updates below this line
 
 
 #categories = {
@@ -570,50 +570,22 @@ emerging_markets = process_data("/workspaces/pacificlifemodel24/streamlit/data/2
 #        st.error("The uploaded file does not match any recognized category.")
 
 
-"""#Bangyangs updates above this line"""
+
+#Bangyangs updates above this line
 
 equities = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, small_cap_growth, small_cap_value, international_growth, international_value, international_small_cap, emerging_markets]
 
-### Parameters (configure before running functions will modify these to be editable from streamlit page)
-
-# years determines the timeframe of the data, i.e. the last 5 years, 10 years, etc.
-years = st.slider(
-    "Select the number of years:",
-    min_value=5,  
-    max_value=20,  
-    value=10,  
-    step=5  
-)
+#set default year parameter
+years = 10
 
 # set weights parameters
+
 value_weight = 0.4
 growth_weight = 0.4
 sentiment_weight = 0.2
 
 
 # Define default values for weights
-if 'value_weight' not in st.session_state:
-    st.session_state['value_weight'] = 0.4
-if 'growth_weight' not in st.session_state:
-    st.session_state['growth_weight'] = 0.4
-if 'sentiment_weight' not in st.session_state:
-    st.session_state['sentiment_weight'] = 0.2
-
-def validate_weights():
-    total = st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight
-    if total != 1.0:
-        diff = 1.0 - total
-        st.session_state.sentiment_weight += diff
-        st.error("The total of weights has been adjusted to 1.0 by modifying the sentiment weight.")
-
-# Creating number inputs for weights
-st.number_input("Value Weight", min_value=0.0, max_value=1.0, value=st.session_state.value_weight, key='value_weight', on_change=validate_weights)
-st.number_input("Growth Weight", min_value=0.0, max_value=1.0, value=st.session_state.growth_weight, key='growth_weight', on_change=validate_weights)
-st.number_input("Sentiment Weight", min_value=0.0, max_value=1.0, value=st.session_state.sentiment_weight, key='sentiment_weight', on_change=validate_weights)
-
-# Displaying the current weights and their sum
-st.write(f"Total: {st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight}")
-
 # Set names of the asset classes
 names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 'Small Cap Value', 'International Growth', 'International Value', 'International Small Cap', 'Emerging Markets']
 
@@ -765,14 +737,42 @@ inflation = inflation.resample('M').last()
 inflation['YoY Inflation Rate (%)'] = inflation['CPIAUCNS'].pct_change(12) * 100
 
 inflation.tail()
+
+def validate_weights():
+    total = st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight
+    if total != 1.0:
+        diff = 1.0 - total
+        st.session_state.sentiment_weight += diff
+        st.error("The total of weights has been adjusted to 1.0 by modifying the sentiment weight.")
 #Below this is streamlit stuff
 
 
 ## This is the new streamlit layout, everything above is the model code##
-tab1, tab2, tab3, tab4 = st.tabs(["📈 Chart", "🗃 settings", "EDA", "holding"])
-#fig = plot_scores(data)
-#tab1.st.plotly_chart(fig)
+tab1, tab2, tab3, tab4 = st.tabs(["Asset Scores", "🗃 settings", "EDA", "📈 Charts"])
 with tab1:
+# years determines the timeframe of the data, i.e. the last 5 years, 10 years, etc.
+    years = st.slider(
+        "Select the number of years:",
+        min_value=5,  
+        max_value=20,  
+        value=10,  
+        step=5  
+    )
+    if 'value_weight' not in st.session_state:
+        st.session_state['value_weight'] = 0.4
+    if 'growth_weight' not in st.session_state:
+        st.session_state['growth_weight'] = 0.4
+    if 'sentiment_weight' not in st.session_state:
+        st.session_state['sentiment_weight'] = 0.2
+
+# Creating number inputs for weights
+    st.number_input("Value Weight", min_value=0.0, max_value=1.0, value=st.session_state.value_weight, key='value_weight', on_change=validate_weights)
+    st.number_input("Growth Weight", min_value=0.0, max_value=1.0, value=st.session_state.growth_weight, key='growth_weight', on_change=validate_weights)
+    st.number_input("Sentiment Weight", min_value=0.0, max_value=1.0, value=st.session_state.sentiment_weight, key='sentiment_weight', on_change=validate_weights)
+
+# Displaying the current weights and their sum
+    st.write(f"Total: {st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight}")
+
     fig = plot_scores(equities)
     st.plotly_chart(fig)
 

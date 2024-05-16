@@ -753,29 +753,32 @@ def validate_weights():
 
 ## This is the new streamlit layout, everything above is the model code##
 tab1, tab2, tab3, tab4 = st.tabs(["Asset Scores", "🗃 settings", "EDA", "📈 Charts"])
+###everything between this and the below ### comment is in tab 1.
 with tab1:
+
 # years determines the timeframe of the data, i.e. the last 5 years, 10 years, etc.
-    years = st.slider(
-        "Select the number of years:",
-        min_value=5,  
-        max_value=20,  
-        value=10,  
-        step=5  
-    )
-    if 'value_weight' not in st.session_state:
-        st.session_state['value_weight'] = 0.4
-    if 'growth_weight' not in st.session_state:
-        st.session_state['growth_weight'] = 0.4
-    if 'sentiment_weight' not in st.session_state:
-        st.session_state['sentiment_weight'] = 0.2
+    with st.popover("Edit Timeframe and Weights"):
+        years = st.slider(
+            "Select the number of years:",
+            min_value=5,  
+            max_value=20,  
+            value=10,  
+            step=5  
+        )
+        if 'value_weight' not in st.session_state:
+            st.session_state['value_weight'] = 0.4
+        if 'growth_weight' not in st.session_state:
+            st.session_state['growth_weight'] = 0.4
+        if 'sentiment_weight' not in st.session_state:
+            st.session_state['sentiment_weight'] = 0.2
 
 # Creating number inputs for weights
-    st.number_input("Value Weight", min_value=0.0, max_value=1.0, value=st.session_state.value_weight, key='value_weight', on_change=validate_weights)
-    st.number_input("Growth Weight", min_value=0.0, max_value=1.0, value=st.session_state.growth_weight, key='growth_weight', on_change=validate_weights)
-    st.number_input("Sentiment Weight", min_value=0.0, max_value=1.0, value=st.session_state.sentiment_weight, key='sentiment_weight', on_change=validate_weights)
+        st.number_input("Value Weight", min_value=0.0, max_value=1.0, value=st.session_state.value_weight, key='value_weight', on_change=validate_weights)
+        st.number_input("Growth Weight", min_value=0.0, max_value=1.0, value=st.session_state.growth_weight, key='growth_weight', on_change=validate_weights)
+        st.number_input("Sentiment Weight", min_value=0.0, max_value=1.0, value=st.session_state.sentiment_weight, key='sentiment_weight', on_change=validate_weights)
 
 # Displaying the current weights and their sum
-    st.write(f"Total: {st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight}")
+        st.write(f"Total: {st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight}")
 
     fig = plot_scores(equities)
     st.plotly_chart(fig)

@@ -1,8 +1,11 @@
+### Below are all the functions for the streamlit app ###
+
+# Importing packages
 import streamlit as st
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
-#import yfinance as yf  # Install using: pip install yfinance
+import yfinance as yf  # Install using: pip install yfinance
 from datetime import datetime, timedelta
 import pandas_datareader as pdr
 #from IPython.display import display
@@ -12,95 +15,117 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import os
 import matplotlib.pyplot as plt
+import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
 
 
+# Equities Functions
 
-### Data preprocess function
+## Equities Data Preprocess Function
 
-def process_data(file_name):
+def process_equities_data(file_name):
+    """
+    Process an Excel file of data for analysis.
+    This function reads the data, ensures the datetime is in the correct format, sorts the data, renames certain columns, and fills NaN values.
     
-    #Process an Excel file of data for analysis.
-    #This function reads the data, ensures the datetime is in the correct format, sorts the data, renames certain columns, and fills NaN values.
-
-    #Parameters:
-    #file_name (str): The name of the Excel file to process.
-
-    #Returns:
-    #df (pd.DataFrame): The processed DataFrame.
+    Parameters:
+    file_name (str): The name of the Excel file to process.
     
-    # Get the directory of the current script
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    
-    # Assuming your data folder is inside a folder named 'streamlit/data' relative to the script
-    full_path = os.path.join(base_path, 'streamlit', 'data', file_name)
-   # origional was read_excel (file_name) changed to full_path to locate file and read it.
-    df = pd.read_excel(full_path)
+    Returns:
+    df (pd.DataFrame): The processed DataFrame.
+    """
+    # Read the data
+    df = pd.read_excel(file_name)
 
     # Make sure datetime is in the right format
     df["Date"] = pd.to_datetime(df["Date"])
 
-    # Reverse data sorting so that it is in ascending order
+    # Reverse data sorting so that it is in ascending order 
     df = df.sort_values('Date', ascending=True)
 
     # Find columns by partial name and rename them
     column_names = {
-        df.filter(like='ROC').columns[0]: 'Monthly Return(%)',
-        df.filter(like='Last Price').columns[0]: 'Last Price',
-        df.filter(like='P/Bk').columns[0]: 'P/B',
-        df.filter(like='Div Yld').columns[0]: 'Div Yld',
-        df.filter(like='P/E').columns[0]: 'P/E',
-        df.filter(like='LTG EPS').columns[0]: 'LTG EPS',
-        df.filter(like='Equity').columns[0]: 'ROE',
-        df.filter(like='Beta').columns[0]: 'Raw Beta',
-        df.filter(like='Volatility').columns[0]: 'Volatility 30D'
+        df.filter(like='Price Earnings Ratio').columns[0]: 'Price Earnings Ratio',
+        df.filter(like='Price/Cash Flow').columns[0]: 'Price/Cash Flow',
+        df.filter(like='Price to Sales Ratio').columns[0]: 'Price to Sales Ratio',
+        df.filter(like='Price/EBITDA').columns[0]: 'Price/EBITDA',
+        df.filter(like='Price to Book Ratio').columns[0]: 'Price to Book Ratio',
+        df.filter(like='EV To Trailing 12M Sales').columns[0]: 'EV To Trailing 12M Sales',
+        df.filter(like='Enterprise Value/EBITDA ').columns[0]: 'Enterprise Value/EBITDA',
+        df.filter(like='Dividend 12 Month Yld - Gross').columns[0]: 'Dividend 12 Month Yld - Gross',
+        df.filter(like='Gross Margin').columns[0]: 'Gross Margin',
+        df.filter(like='Profit Margin').columns[0]: 'Profit Margin',
+        df.filter(like='Return on Assets').columns[0]: 'Return on Assets',
+        df.filter(like='Return on Common Equity').columns[0]: 'Return on Common Equity',
+        df.filter(like='Dividend Payout Ratio').columns[0]: 'Dividend Payout Ratio',
+        df.filter(like='Total Debt to EV').columns[0]: 'Total Debt to EV',
+        df.filter(like='Net Debt/EBITDA').columns[0]: 'Net Debt/EBITDA',
+        df.filter(like='Total Debt to Total Equity').columns[0]: 'Total Debt to Total Equity',
+        df.filter(like='Total Debt to Total Asset').columns[0]: 'Total Debt to Total Asset',
+        df.filter(like='Close Price').columns[0]: 'Close Price'
     }
     df.rename(columns=column_names, inplace=True)
-
+    
     # Fill NaN values using forward and backward fill
-    df = df.ffill()
-    df = df.bfill()
+    df = df.fillna(method='ffill')
+    df = df.fillna(method='bfill')
+
+    # Add annual return column
+    df['Annual Return'] = df['Close Price'].pct_change(periods=12)
 
     return df
 
-# Scoring System Functions
 
-### Score Calculation Functions
+## Equities Score Calculation Functions
 
-
-def calculate_value(data):
+def calculate_valuation(data):
     """
     Calculate the average percentile of value indicators.
     This function selects a timeframe using the 'years' variable, calculates the percentile of the first, second, and third value indicators, and then calculates the average of these three percentiles.
 
     Parameters:
     data (pd.DataFrame): The DataFrame containing the value indicators.
-
-    Returns:
-    average_percentile (float): The average percentile of the three value indicators.
     """
     # Select timeframe using years variable
     if years is not None:
         cutoff_date = datetime.now() - pd.DateOffset(years=years)
         data = data.loc[data['Date'] >= cutoff_date]
 
-    # Calculate percentile of first value indicator (P/B)
-    last_pb = data['P/B'].iloc[-1]
-    # Take the inverse of the percentile because lower P/B is better
-    pb_percentile = 100 - stats.percentileofscore(data['P/B'], last_pb, nan_policy='omit')
+    # Calculate percentile of first value indicator (Price Earnings Ratio)
+    last_pe = data['Price Earnings Ratio'].iloc[-1]
+    pe_percentile = stats.percentileofscore(data['Price Earnings Ratio'], last_pe, kind='rank',nan_policy='omit')
 
-    # Calculate percentile of second value indicator (Div Yld)
-    last_div = data['Div Yld'].iloc[-1]
-    div_percentile = stats.percentileofscore(data['Div Yld'], last_div, nan_policy='omit')
+    # Calculate percentile of second value indicator (Price/Cash Flow)
+    last_pcash = data['Price/Cash Flow'].iloc[-1]
+    pcash_percentile = 100 - stats.percentileofscore(data['Price/Cash Flow'], last_pcash, kind='rank', nan_policy='omit')
 
-    # Calculate percentile of third value indicator (P/E)
-    last_pe = data['P/E'].iloc[-1]
-    # Take the inverse of the percentile because lower P/E is better
-    pe_percentile = 100 - stats.percentileofscore(data['P/E'], last_pe, nan_policy='omit')
+    # Calculate percentile of third value indicator (Price to Sales Ratio)
+    last_psale = data['Price to Sales Ratio'].iloc[-1]
+    psale_percentile = 100 - stats.percentileofscore(data['Price to Sales Ratio'], last_psale, kind='rank', nan_policy='omit')
 
-    # Calculate the average of the three percentiles
-    average_percentile = (pb_percentile + div_percentile + pe_percentile) / 3
+    # Calculate percentile of fourth value indicator (Price/EBITA)
+    last_pebita = data['Price/EBITDA'].iloc[-1]
+    pebita_percentile = 100 - stats.percentileofscore(data['Price/EBITDA'], last_pebita, kind='rank', nan_policy='omit')
+
+    # Calculate percentile of fifth value indicator (Price to Book Ratio)
+    last_pb = data['Price to Book Ratio'].iloc[-1]
+    pb_percentile = 100 - stats.percentileofscore(data['Price to Book Ratio'], last_pb, kind='rank', nan_policy='omit')
+
+    # Calculate percentile of sixth value indicator (EV To Trailing 12M Sales)
+    last_ev = data['EV To Trailing 12M Sales'].iloc[-1]
+    ev_percentile = 100 - stats.percentileofscore(data['EV To Trailing 12M Sales'], last_ev, kind='rank', nan_policy='omit')
+
+    # Calculate percentile of seventh value indicator (Enterprise Value/EBITDA)
+    last_ev_ebitda = data['Enterprise Value/EBITDA'].iloc[-1]
+    ev_ebitda_percentile = 100 - stats.percentileofscore(data['Enterprise Value/EBITDA'], last_ev_ebitda, kind='rank', nan_policy='omit')
+
+    # Calculate percentile of eigth value indicator (Dividend 12 Month Yld - Gross)
+    last_div = data['Dividend 12 Month Yld - Gross'].iloc[-1]
+    div_percentile = stats.percentileofscore(data['Price Earnings Ratio'], last_div, kind='rank', nan_policy='omit')
+
+    # Calculate the average of the 8 percentiles
+    average_percentile = (pe_percentile + pcash_percentile + psale_percentile + pebita_percentile + pb_percentile + ev_percentile + ev_ebitda_percentile + div_percentile) / 8
 
     return average_percentile
 
@@ -121,22 +146,33 @@ def calculate_growth(data):
         cutoff_date = datetime.now() - pd.DateOffset(years=years)
         data = data.loc[data['Date'] >= cutoff_date]
 
-    # Calculate percentile of first growth indicator (LTG EPS)
-    last_eps = data['LTG EPS'].iloc[-1]
-    eps_percentile = stats.percentileofscore(data['LTG EPS'], last_eps, nan_policy='omit')
+    # Calculate percentile of first growth indicator (Gross Margin)
+    last_grm = data['Gross Margin'].iloc[-1]
+    grm_percentile = stats.percentileofscore(data['Gross Margin'], last_grm, kind='rank', nan_policy='omit') 
 
-    # Calculate percentile of second growth indicator (ROE)
-    last_roe = data['ROE'].iloc[-1]
-    roe_percentile = stats.percentileofscore(data['ROE'], last_roe, nan_policy='omit')
+    # Calculate percentile of second growth indicator (Profit Margin)
+    last_prm = data['Profit Margin'].iloc[-1]
+    prm_percentile = stats.percentileofscore(data['Profit Margin'], last_prm, kind='rank', nan_policy='omit')
 
-    # Calculate the average of the two percentiles
-    average_percentile = (eps_percentile + roe_percentile) / 2
+    # Calculate percentile of third growth indicator (Return on Assets)
+    last_roa = data['Return on Assets'].iloc[-1]
+    roa_percentile = stats.percentileofscore(data['Return on Assets'], last_roa, kind='rank', nan_policy='omit')
+
+    # Calculate percentile of fourth growth indicator (Return on Common Equity)
+    last_roe = data['Return on Common Equity'].iloc[-1]
+    roe_percentile = stats.percentileofscore(data['Return on Common Equity'], last_roe, kind='rank', nan_policy='omit')
+
+    # Calculate percentile of fifth growth indicator (Dividend Payout Ratio)
+    last_dpr = data['Dividend Payout Ratio'].iloc[-1]
+    dpr_percentile = stats.percentileofscore(data['Dividend Payout Ratio'], last_dpr, kind='rank', nan_policy='omit')
+
+    # Calculate the average of the 5 percentiles
+    average_percentile = (grm_percentile + prm_percentile + roa_percentile + roe_percentile + dpr_percentile) / 5
 
     return average_percentile
 
 
-
-def calculate_sentiment(data):
+def calculate_leverage(data):
     """
     Calculate the average percentile of sentiment indicators.
     This function selects a timeframe using the 'years' variable, calculates the percentile of the sentiment indicators, and then calculates the average of the percentiles.
@@ -152,20 +188,27 @@ def calculate_sentiment(data):
         cutoff_date = datetime.now() - pd.DateOffset(years=years)
         data = data.loc[data['Date'] >= cutoff_date]
 
-    # Calculate percentile of first sentiment indicator (Raw Beta)
-    last_beta = data['Raw Beta'].iloc[-1]
-    beta_percentile = stats.percentileofscore(data['Raw Beta'], last_beta, nan_policy='omit')
+    # Calculate percentile of first sentiment indicator (Total Debt to EV)
+    last_dev = data['Total Debt to EV'].iloc[-1]
+    dev_percentile = 100 - stats.percentileofscore(data['Total Debt to EV'], last_dev, kind='rank', nan_policy='omit')
 
-    # Calculate percentile of second sentiment indicator (Volatility 30D)
-    last_volatility = data['Volatility 30D'].iloc[-1]
-    volatility_percentile = stats.percentileofscore(data['Volatility 30D'], last_volatility, nan_policy='omit')
+    # Calculate percentile of second sentiment indicator (Net Debt/EBITDA)
+    last_de_ebitda= data['Net Debt/EBITDA'].iloc[-1]
+    de_ebitda_percentile = 100 - stats.percentileofscore(data['Net Debt/EBITDA'], last_de_ebitda, kind='rank', nan_policy='omit')
 
-    # Calculate the average of the two percentiles
-    average_percentile = (beta_percentile + volatility_percentile) / 2
+    # Calculate percentile of third sentiment indicator (Total Debt to Total Equity)
+    last_debt_equity= data['Total Debt to Total Equity'].iloc[-1]
+    debt_equity_percentile = 100 - stats.percentileofscore(data['Total Debt to Total Equity'], last_debt_equity, kind='rank', nan_policy='omit')
 
+    # Calculate percentile of fourth sentiment indicator (Total Debt to Total Asset)
+    last_debt_asset= data['Total Debt to Total Asset'].iloc[-1]
+    debt_asset_percentile = 100 - stats.percentileofscore(data['Total Debt to Total Asset'], last_debt_asset, kind='rank', nan_policy='omit')
+
+    # Calculate the average of the 4 percentiles
+    average_percentile = (dev_percentile + de_ebitda_percentile + debt_equity_percentile + debt_asset_percentile) / 4
+    
     # Inverse the percentile because lower beta and volatility is considered better
-    return 100 - average_percentile
-
+    return average_percentile
 
 
 def calculate_final_score(data):
@@ -179,89 +222,261 @@ def calculate_final_score(data):
     Returns:
     final_score (float): The final score of the asset class.
     """
-    value_score = calculate_value(data)
+    value_score = calculate_valuation(data)
     growth_score = calculate_growth(data)
-    sentiment_score = calculate_sentiment(data)
-
-    final_score = (value_score * value_weight) + (growth_score * growth_weight) + (sentiment_score * sentiment_weight)
+    sentiment_score = calculate_leverage(data)
+    
+    final_score = (value_score * valuation_weight) + (growth_score * growth_weight) + (sentiment_score * leverage_weight)
 
     return final_score
 
-### Display Results Functions
 
-def print_result(data):
+## Equities Display Results Functions
+
+def plot_equities_scores(data, names):
     """
-    Print the final score of an asset class
-    """
-    value_score = calculate_value(data)
-    growth_score = calculate_growth(data)
-    sentiment_score = calculate_sentiment(data)
-    final_score = (value_score * value_weight) + (growth_score * growth_weight) + (sentiment_score * sentiment_weight)
-
-    result = print("Timeframe (yrs):", years, "\nValue Score (%): ", value_score, "\nGrowth Score (%) : ", growth_score, "\nSentiment Score (%) : ", sentiment_score, "\nFinal Score (%): ", final_score)
-
-    return result
-
-
-def plot_scores(data):
-    """
-    Plot the scores of the asset classes
+    Plot the scores of the asset classes using Plotly.
     This function calculates the scores for each category and creates a bar plot to visualize the scores.
 
     Parameters:
     data (list): A list of DataFrames containing the value, growth, and sentiment indicators for each asset class.
+    names (list): A list of strings containing the names of each asset class.
 
     Returns:
-    Bar plot of the scores for each asset class.
+    A bar plot of the scores for each asset class using Plotly.
     """
     # Create a dictionary to store the scores for each category
-    scores = {'Final': [], 'Value': [], 'Growth': [], 'Sentiment': []}
+    scores = {'Final': [], 'Valuation': [], 'Growth': [], 'Leverage': []}
+    
+    # Calculate the scores for each category
+    for df in data:
+        scores['Valuation'].append(calculate_valuation(df))
+        scores['Growth'].append(calculate_growth(df))
+        scores['Leverage'].append(calculate_leverage(df))
+        scores['Final'].append(calculate_final_score(df))
+
+    # Create a dataframe from the scores dictionary and add asset names as a column
+    scores_df = pd.DataFrame(scores, index=names)
+    scores_df.reset_index(inplace=True)
+    scores_df.rename(columns={'index': 'Asset Class'}, inplace=True)
+
+    # Create a separate bar plot for each category
+    for category in scores:
+        # Create a new column for color based on the score ranking
+        scores_df = scores_df.sort_values(by=category, ascending=True)  # Keep ascending sort
+        scores_df['color'] = ['Other Scores' for _ in range(len(scores_df))]  # Default 'Other Scores'
+        scores_df.iloc[-3:, scores_df.columns.get_loc('color')] = ['Third Highest Score', 'Second Highest Score', 'Highest Score']  # Modify the last 3
+    
+        # Create the bar plot
+        fig = px.bar(scores_df, y='Asset Class', x=category, title=f'Scores of Asset Classes for {category}: {years}yr Timeframe', 
+                     color='color', orientation='h', 
+                     color_discrete_map={'Highest Score': 'navy', 'Second Highest Score': 'royalblue', 'Third Highest Score': 'skyblue', 'Other Scores': 'lightgray'},
+                     hover_data={'Asset Class': True, category: True, 'color': False},
+                     text=category)
+        fig.update_traces(texttemplate='%{text:.2f}', textposition='inside')
+    
+    return fig
+
+
+# Fixed Income Functions
+
+## Fixed Income Data Preprocess Function
+def process_fi_data(file_name):
+    """
+    Process an Excel file of data for analysis.
+    This function reads the data, ensures the datetime is in the correct format, sorts the data, renames certain columns, and fills NaN values.
+    
+    Parameters:
+    file_name (str): The name of the Excel file to process.
+    
+    Returns:
+    df (pd.DataFrame): The processed DataFrame.
+    """
+    # Read the data
+    df = pd.read_excel(file_name)
+
+    # Make sure datetime is in the right format
+    df["Date"] = pd.to_datetime(df["Date"])
+
+    # Reverse data sorting so that it is in ascending order 
+    df = df.sort_values('Date', ascending=True)
+
+    # Find columns by partial name and rename them
+    column_names = {
+        df.filter(like='Index Price').columns[0]: 'Index Price',
+        df.filter(like='Index Coupon').columns[0]: 'Index Coupon',
+        df.filter(like='Index Time to Maturity').columns[0]: 'Index Time to Maturity',
+        df.filter(like='Index OAS').columns[0]: 'Index OAS',
+        df.filter(like='Index OAD').columns[0]: 'Index OAD',
+        df.filter(like='Index OAC').columns[0]: 'Index OAC',
+        df.filter(like='Index Yield to Worst').columns[0]: 'Index Yield to Worst',
+        df.filter(like='Index Yield to Maturity').columns[0]: 'Index Yield to Maturity',
+        df.filter(like='Index Bid Spread').columns[0]: 'Index Spread',
+        df.filter(like='Index Total Return').columns[0]: 'Index Monthly Return(%)'
+    }
+    df.rename(columns=column_names, inplace=True)
+
+    df['Annual Return'] = df['Index Price'].pct_change(periods=12)
+    
+    # Fill NaN values using forward and backward fill
+    df = df.fillna(method='ffill')
+    df = df.fillna(method='bfill')
+    df = df.fillna(0)
+
+    return df
+
+
+## Fixed Income Score Calculation Functions
+
+def calculate_fixed_income_value(data):
+    """
+    Calculate the percentiles of value fixed income indicators.
+    This function selects a timeframe using the 'years' variable and calculates the percentiles.
+    """
+
+    # Select timeframe using years variable
+    if years is not None:
+        cutoff_date = datetime.now() - pd.DateOffset(years=years)
+        data = data.loc[data['Date'] >= cutoff_date]
+
+    # Calculate percentile of Index Price
+    last_price = data['Index Price'].iloc[-1]
+    # Take the inverse of the percentile because lower price is better
+    price_percentile = round(100 - stats.percentileofscore(data['Index Price'], last_price, nan_policy='omit'), 2)
+
+    # Calculate percentile of Index Yield to Maturity
+    last_yield_maturity = data['Index Yield to Maturity'].iloc[-1]
+    yield_to_maturity_percentile = round(stats.percentileofscore(data['Index Yield to Maturity'], last_yield_maturity, nan_policy='omit'), 2)
+
+    # Calculate percentile of Index Yield to Worst
+    last_yield_worst = data['Index Yield to Worst'].iloc[-1]
+    yield_to_worst_percentile = round(stats.percentileofscore(data['Index Yield to Worst'], last_yield_worst, nan_policy='omit'), 2)
+
+    avg_percentile = (price_percentile + yield_to_maturity_percentile + yield_to_worst_percentile) / 3
+
+    return avg_percentile
+
+
+def calculate_fixed_income_volatility(data):
+    """
+    Calculate the percentile of volatility fixed income indicators.
+    This function selects a timeframe using the 'years' variable and calculates the percentile.
+    """
+
+    # Select timeframe using years variable
+    if years is not None:
+        cutoff_date = datetime.now() - pd.DateOffset(years=years)
+        data = data.loc[data['Date'] >= cutoff_date]
+
+    # Calculate percentile of Index OAS
+    last_oas = data['Index OAS'].iloc[-1]
+    oas_percentile = round(stats.percentileofscore(data['Index OAS'], last_oas, nan_policy='omit'), 2)
+
+    # Calculate percentile of Index OAD
+    last_oad = data['Index OAD'].iloc[-1]
+    oad_percentile = round(stats.percentileofscore(data['Index OAD'], last_oad, nan_policy='omit'), 2)
+
+    # Calculate percentile of Index OAC
+    last_oac = data['Index OAC'].iloc[-1]
+    oac_percentile = round(stats.percentileofscore(data['Index OAC'], last_oac, nan_policy='omit'), 2)
+
+    # Calculate percentile of Index Spread
+    last_spread = data['Index Spread'].iloc[-1]
+    spread_percentile = round(stats.percentileofscore(data['Index Spread'], last_spread, nan_policy='omit'), 2)
+
+    avg_percentile = (oas_percentile + oad_percentile + oac_percentile + spread_percentile) / 4
+
+    return avg_percentile
+
+
+def calculate_fixed_income_coupon(data):
+    """
+    Calculate the percentile of income fixed income indicators.
+    This function selects a timeframe using the 'years' variable and calculates the percentile.
+    """
+
+    # Select timeframe using years variable
+    if years is not None:
+        cutoff_date = datetime.now() - pd.DateOffset(years=years)
+        data = data.loc[data['Date'] >= cutoff_date]
+
+    # Calculate percentile of Index Coupon
+    last_coupon = data['Index Coupon'].iloc[-1]
+    coupon_percentile = round(stats.percentileofscore(data['Index Coupon'], last_coupon, nan_policy='omit'), 2)
+
+    return coupon_percentile
+
+
+def calculate_fixed_income_duration(data):
+    """
+    Calculate the percentile of duration fixed income indicators.
+    This function selects a timeframe using the 'years' variable and calculates the percentile.
+    """
+
+    # Select timeframe using years variable
+    if years is not None:
+        cutoff_date = datetime.now() - pd.DateOffset(years=years)
+        data = data.loc[data['Date'] >= cutoff_date]
+
+    # Calculate percentile of Index Time to Maturity
+    last_maturity = data['Index Time to Maturity'].iloc[-1]
+    time_to_maturity_percentile = round(stats.percentileofscore(data['Index Time to Maturity'], last_maturity, nan_policy='omit'), 2)
+
+    return time_to_maturity_percentile
+
+
+## Fixed Income Display Results Functions
+
+def plot_fixed_income_scores(data, names):
+    """Plots scores of fixed income asset classes with top 3 highlighting."""
+    scores = {'Value': [], 'Volatility': [], 'Coupon': [], 'Duration': []}
 
     # Calculate the scores for each category
     for df in data:
-        scores['Value'].append(calculate_value(df))
-        scores['Growth'].append(calculate_growth(df))
-        scores['Sentiment'].append(calculate_sentiment(df))
-        scores['Final'].append(calculate_final_score(df))
+        scores['Value'].append(calculate_fixed_income_value(df))
+        scores['Volatility'].append(calculate_fixed_income_volatility(df))
+        scores['Coupon'].append(calculate_fixed_income_coupon(df))
+        scores['Duration'].append(calculate_fixed_income_duration(df))
+    
+    scores_df = pd.DataFrame(scores, index=names)
+    scores_df.reset_index(inplace=True)
+    scores_df.rename(columns={'index': 'Asset Class'}, inplace=True)
 
-    # Create a dataframe from the scores dictionary
-    scores_df = pd.DataFrame(scores)
+    figures = []  # Store all figure objects
 
-    # Create a list of labels for the x-axis
-    x_labels = names
+    for category in scores:
+        # Color assignment for top 3
+        scores_df = scores_df.sort_values(by=category, ascending=True)
+        scores_df['color'] = ['Other Scores' for _ in range(len(scores_df))]
+        scores_df.iloc[-3:, scores_df.columns.get_loc('color')] = ['Third Highest Score', 'Second Highest Score', 'Highest Score']
 
-    # Create a bar plot of the scores
-    for i, category in enumerate(scores):
-        # Create a new column for color based on whether the score is the highest or not
-        scores_df['color'] = ['Highest Score' if x == scores_df[category].max() else 'Other Scores' for x in scores_df[category]]
-
-        fig = px.bar(scores_df, y=x_labels, x=category, color='color', orientation='h', title=f'Scores of Asset Classes for {category}',
-                     color_discrete_map={'Highest Score': 'blue', 'Other Scores': 'darkgray'},
+        fig = px.bar(scores_df, y='Asset Class', x=category, color='color', orientation='h',
+                     title=f'Scores of Asset Classes for {category}',
+                     color_discrete_map={'Highest Score': 'navy', 'Second Highest Score': 'royalblue', 'Third Highest Score': 'skyblue', 'Other Scores': 'lightgray'},
                      text=scores_df[category].round(2))
-        #currently spits out the figure plot in streamlit- need to update to just 'fig' and then use 
-        # a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
-        return fig
+
+        figures.append(fig)  # Add the figure to the list
+
+    return figures  # Return the list of figures, i.e. figures[0] for Value, figures[1] for Volatility, etc.
+
 
 # Backtesting Functions
 
 ## Using Average Returns
 
-#### Calculate Avg Returns Function
-
-
 def calculate_return(df_list, names):
-    """
-    Calculate the average returns for each dataset in the list.
-    This function calculates the average returns for each dataset in the list over different time frames (1, 5, 10, 15, 20 years).
+    """Calculates average annual returns over specified timeframes.
 
-    Parameters:
-    df_list (list): A list of DataFrames containing the returns data for each asset class.
+    Args:
+        df_list (list): A list of DataFrames containing the 'Annual Return' column.
+        timeframes (list): List of timeframes (in years) for average calculation.
 
     Returns:
-    results_df (pd.DataFrame): A DataFrame containing the average returns for each dataset over different time frames.
+        pd.DataFrame: DataFrame with average annual returns for each timeframe.
     """
+
     all_returns = []  # This will store the average returns for each dataset
-    time_frames = [1, 5, 10, 15, 20]
+    time_frames = [1, 3, 5, 10]
 
     for df in df_list:
         returns = []  # This will store the average returns for the current dataset across time frames
@@ -272,8 +487,8 @@ def calculate_return(df_list, names):
             # Filter the DataFrame based on the time frame
             filtered_df = df[(pd.to_datetime(df['Date']) > start_date) & (pd.to_datetime(df['Date']) <= latest_date)]
 
-            # Calculate the average return for the current time frame using the 'Monthly Return(%)' column
-            avg_return = round(filtered_df['Monthly Return(%)'].mean(), 2)
+            # Calculate the average return for the current time frame using the 'Annual Return(%)' column
+            avg_return = round(filtered_df['Annual Return'].mean(), 2)
             returns.append(avg_return)
 
         # Append the calculated average returns for this dataset to the all_returns list
@@ -287,259 +502,83 @@ def calculate_return(df_list, names):
 
     return results_df
 
-### Line Chart
 
-def plot_avg_return_line_chart(results):
-    """
-    Plot the average returns for each asset class over different time frames.
-    This function creates a line chart to visualize the average returns for each asset class over different time frames.
+def plot_avg_return_heatmap(df_list, names):
+    """Generates a heatmap of average annual returns."""
+    
+    results = calculate_return(df_list, names)
 
-    Parameters:
-    results (pd.DataFrame): A DataFrame containing the average returns for each dataset over different time frames.
-
-    Returns:
-    Line chart of the average returns for each asset class over different time frames.
-    """
-    fig = go.Figure()
-
-    # Add a line for each asset
-    for asset in results.columns[1:]:  # Skip the first column as it's 'Timeframe(yr)'
-        fig.add_trace(go.Scatter(
-            x=results['Timeframe(yr)'],
-            y=results[asset],
-            mode='lines+markers',
-            name=asset
-        ))
-
-    # Update layout
-    fig.update_layout(
-        title='Average Return by Retrospective Timeframe',
-        xaxis_title='Retrospective Timeframe (Years)',
-        yaxis_title='Average Return (%)',
-        legend_title='Asset',
-        xaxis=dict(type='category')  # Treat timeframes as categorical data for consistent spacing
-    )
-    #currently spits out the figure plot in streamlit- need to update to just 'fig' and then use 
-    # a seperate streamlit function to plot the figure maybe a button or conditional statement when selected.
-    return fig 
-
-### Heat Maps
-
-def plot_returns_heatmap(results):
-    """
-    This function plots a heatmap of returns for different assets over various timeframes.
-
-    Parameters:
-    results (DataFrame): A DataFrame containing the returns of different assets over various timeframes.
-    """
-    heatmap_df = results.set_index('Timeframe(yr)').transpose()
-
-    # Find the maximum IRR value and its position
-    max_irr_value = heatmap_df.values.max()
-    max_irr_pos = np.where(heatmap_df.values == max_irr_value)
-
-    fig = go.Figure(data=go.Heatmap(
-        z=heatmap_df.values,
-        x=heatmap_df.columns,  # Timeframes
-        y=heatmap_df.index,  # Dataset names
-        colorscale='RdBu',
-        colorbar=dict(title='Return')
-    ))
-
-    # Highlight the best-performing asset in each timeframe with a transparent background
-    for timeframe in heatmap_df.columns:
-        # Find the index of the max IRR value in this timeframe
-        max_irr_index = heatmap_df[timeframe].idxmax()
-        max_irr_value = heatmap_df[timeframe].max()
-
-        fig.add_annotation(
-            x=timeframe,
-            y=max_irr_index,
-            text=f"Best: {max_irr_value:.2f}%",  # Format the IRR value to 2 decimal places
-            showarrow=False,
-            font=dict(
-                color="black",
-                size=12
-            ),
-            bgcolor="rgba(255, 255, 255, 0.5)"  # Use RGBA for transparent red background
-        )
-
-    title_text = 'Average Return by Retrospective Timeframe<br>' \
-                 '<span style="font-size: 14px;">Initial Investment: $100</span>'
-
-    fig.update_layout(
-        title= title_text,
-        xaxis_title='Retrospective Timeframe (Years)',
-        yaxis_title='Dataset',
-        xaxis=dict(tickmode='array', tickvals=results['Timeframe(yr)']),
-        width=900,  # Set width to 600 pixels
-        height=400,  # Set height to 400 pixels
-    )
-
-    return fig
-
-
-def plot_avg_return_heatmap_with_top3(results):
-    """
-    This function plots a heatmap of returns for different assets over various timeframes, highlighting the top 3 performers.
-
-    Parameters:
-    results (DataFrame): A DataFrame containing the returns of different assets over various timeframes.
-    """
     # Ensure 'Timeframe(yr)' is a column and not an index
     if 'Timeframe(yr)' not in results.columns:
         results = results.reset_index().rename(columns={'index': 'Timeframe(yr)'})
+        
+    df_heatmap = results.set_index('Timeframe(yr)').transpose()
 
-    heatmap_df = results.set_index('Timeframe(yr)').transpose()
-
-    fig = go.Figure(data=go.Heatmap(
-        z=heatmap_df.values,
-        x=heatmap_df.columns,  # Timeframes
-        y=heatmap_df.index,  # Dataset names
-        colorscale='RdBu',
-        colorbar=dict(title='Average Return (%)')
-    ))
-
-    # Highlight the top 3 performing assets in each timeframe
-    for timeframe in heatmap_df.columns:
-        # Sort the assets in this timeframe by their return, keeping the top 3
-        top3_assets = heatmap_df[timeframe].sort_values(ascending=False)[:3]
-
-        # Enumerate over the top 3 to add annotations for each
-        for rank, (asset, value) in enumerate(top3_assets.items(), start=1):
-            fig.add_annotation(
-                x=timeframe,
-                y=asset,
-                text=f"Top {rank}: {value:.2f}%",  # Format the value to 2 decimal places
-                showarrow=False,
-                font=dict(
-                    color="black",
-                    size=12
-                ),
-                bgcolor=f"rgba(255, 255, 255, {0.8 - 0.2 * (rank-1)})"  # Decrease transparency for lower ranks
-            )
-
-    title_text = 'Annual Average Return by Retrospective Timeframe<br>' \
-                 '<span style="font-size: 14px;">Highlighting Top 3 Performers</span>'
-
-    fig.update_layout(
-        title=title_text,
-        xaxis_title='Retrospective Timeframe (Years)',
-        yaxis_title='Dataset',
-        width=1200,
-        height=400
-    )
+    # Create Heatmap using Seaborn
+    fig, ax = plt.subplots(figsize=(10, 6))  
+    sns.heatmap(df_heatmap, annot=True, fmt='.2%', cmap='RdBu', cbar_kws={'label': 'Average Return (%)'}, ax=ax) 
+    ax.set_title('Average Annual Returns Across Timeframes (Compounded)')  
+    ax.set_xlabel('Timeframe (Years)') 
+    ax.set_ylabel('Asset Class') 
 
     return fig
 
+
 ## Using Sharpe Ratio
 
-### Sharpe Ratio Results
-
-
 def get_treasury_bill_rate():
-    # Fetch the Treasury bill rate using Yahoo Finance API
-    # Here, we fetch the 3-month Treasury bill rate (change as needed)
     tbill_data = yf.download("^IRX", start=pd.to_datetime('today') - pd.Timedelta(days=1), end=pd.to_datetime('today'))
     tbill_rate = tbill_data['Close'].iloc[-1] / 100  # Convert percentage to decimal
 
     return tbill_rate
 
+
 def calculate_sharpe_ratio(df_list, names):
-    all_sharpes = []  # This will store the Sharpe ratios for each dataset
-    time_frames = [1, 5, 10, 15, 20]
+    """Calculates Sharpe ratios over specified timeframes."""
+    all_sharpes = []  
+    time_frames = [1, 3, 5, 10]  # Keep consistent with return calculation
 
     risk_free_rate = get_treasury_bill_rate()
 
     for df in df_list:
-        sharpes = []  # This will store the Sharpe ratios for the current dataset across time frames
+        sharpes = [] 
         latest_date = pd.to_datetime(df['Date']).max()
 
         for years in time_frames:
             start_date = latest_date - pd.DateOffset(years=years)
             filtered_df = df[(pd.to_datetime(df['Date']) > start_date) & (pd.to_datetime(df['Date']) <= latest_date)]
-
-            # Calculate the excess return over the risk-free rate
-            returns = filtered_df.iloc[:, 9]  # Assuming returns are in the 10th column
+            
+            returns = filtered_df['Annual Return']  
             excess_return = returns - risk_free_rate
-
-            # Calculate the Sharpe ratio
-            sharpe_ratio = round((excess_return.mean() / returns.std()) * np.sqrt(252),2)  # Assuming 252 trading days in a year
+            sharpe_ratio = round((excess_return.mean() / returns.std()) * np.sqrt(12), 2)  
             sharpes.append(sharpe_ratio)
 
-        # Append the calculated Sharpe ratios for this dataset to the all_sharpes list
         all_sharpes.append(sharpes)
 
-    # Create DataFrame for visualization
     results_df = pd.DataFrame(all_sharpes, index=names, columns=time_frames).transpose()
     results_df = results_df.reset_index().rename(columns={'index': 'Timeframe(yr)'})
-
     return results_df
 
-"""### Visualization Functions"""
 
-# Heatmap with top 3 returns
-def plot_sharpe_ratio_heatmap_with_top3(results):
+def plot_sharpe_ratio_heatmap(df_list, names):
+    """Generates a heatmap of Sharpe ratios."""
+    
+    results = calculate_sharpe_ratio(df_list, names)
+
     # Ensure 'Timeframe(yr)' is a column and not an index
     if 'Timeframe(yr)' not in results.columns:
         results = results.reset_index().rename(columns={'index': 'Timeframe(yr)'})
+        
+    df_heatmap = results.set_index('Timeframe(yr)').transpose()
 
-    heatmap_df = results.set_index('Timeframe(yr)').transpose()
+    # Create Heatmap using Seaborn
+    fig, ax = plt.subplots(figsize=(10, 6))  
+    sns.heatmap(df_heatmap, annot=True, fmt='.2f', cmap='RdBu', cbar_kws={'label': 'Sharpe Ratio'}, ax=ax) 
+    ax.set_title('Sharpe Ratio Across Timeframes')  
+    ax.set_xlabel('Timeframe (Years)') 
+    ax.set_ylabel('Asset Class') 
 
-    fig = go.Figure(data=go.Heatmap(
-        z=heatmap_df.values,
-        x=heatmap_df.columns,  # Timeframes
-        y=heatmap_df.index,  # Dataset names
-        colorscale='RdBu',
-        colorbar=dict(title='Sharpe Ratio (%)')
-    ))
-
-    # Highlight the top 3 performing assets in each timeframe
-    for timeframe in heatmap_df.columns:
-        # Sort the assets in this timeframe by their return, keeping the top 3
-        top3_assets = heatmap_df[timeframe].sort_values(ascending=False)[:3]
-
-        # Enumerate over the top 3 to add annotations for each
-        for rank, (asset, value) in enumerate(top3_assets.items(), start=1):
-            fig.add_annotation(
-                x=timeframe,
-                y=asset,
-                text=f"Top {rank}: {value:.2f}%",  # Format the value to 2 decimal places
-                showarrow=False,
-                font=dict(
-                    color="black",
-                    size=12
-                ),
-                bgcolor=f"rgba(255, 255, 255, {0.8 - 0.2 * (rank-1)})"  # Decrease transparency for lower ranks
-            )
-
-    title_text = 'Annual Sharpe Ratio by Retrospective Timeframe<br>' \
-                 '<span style="font-size: 14px;">Highlighting Top 3 Performers</span>'
-
-    fig.update_layout(
-        title=title_text,
-        xaxis_title='Retrospective Timeframe (Years)',
-        yaxis_title='Dataset',
-        width=1200,
-        height=400
-    )
-# returns fig so we can use this later on in the layout 
     return fig
-
-# Equities
-### Import equities data
-
-large_cap_growth = process_data("20y_monthly_RLG.xlsx")
-large_cap_value = process_data("20y_monthly_RLV.xlsx")
-mid_cap_growth = process_data("20y_monthly_RDG.xlsx")
-mid_cap_value = process_data("20y_monthly_RMV.xlsx")
-small_cap_growth = process_data("20y_monthly_RUO.xlsx")
-small_cap_value = process_data("20y_monthly_RUJ.xlsx")
-international_growth = process_data("20y_monthly_MXEA000G.xlsx")
-international_value = process_data("20y_monthly_MXEA000V.xlsx")
-international_small_cap = process_data("20y_monthly_SBERWUU.xlsx")
-emerging_markets = process_data("20y_monthly_MXEF.xlsx")
-#Bangyangs updates below this line
 
 
 #categories = {
@@ -573,228 +612,257 @@ emerging_markets = process_data("20y_monthly_MXEF.xlsx")
 #        st.error("The uploaded file does not match any recognized category.")
 
 
-
 #Bangyangs updates above this line
 
-equities = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, small_cap_growth, small_cap_value, international_growth, international_value, international_small_cap, emerging_markets]
 
-#set default year parameter
+# Equities Results
+
+## Import equities data
+large_cap_growth = process_equities_data("streamlit/data/RLG_10y_monthly.xlsx")
+large_cap_value = process_equities_data("streamlit/data/RLV_10y_monthly.xlsx")
+mid_cap_growth = process_equities_data("streamlit/data/RDG_10y_monthly.xlsx")
+mid_cap_value = process_equities_data("streamlit/data/RMV_10y_monthly.xlsx")
+small_cap_growth = process_equities_data("streamlit/data/RUO_10y_monthly.xlsx")
+small_cap_value = process_equities_data("streamlit/data/RUJ_10y_monthly.xlsx")
+int_growth = process_equities_data("streamlit/data/MXEA000G_10y_monthly.xlsx")
+int_value = process_equities_data("streamlit/data/MXEA000V_10y_monthly.xlsx")
+emerging_markets_equity = process_equities_data("streamlit/data/MXEF_10y_monthly.xlsx")
+small_cap_int = process_equities_data("streamlit/data/SBERWUU_10y_monthly.xlsx")
+
+## Store the dataframes in a list
+equities = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, small_cap_growth, small_cap_value, int_growth, int_value, emerging_markets_equity, small_cap_int]
+
+## Set names of the asset classes
+equities_names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 'Small Cap Value', 'Interational Growth', 'International Value', 'Emerging Markets Equity', 'Small Cap International']
+
+## set default year parameter
 years = 10
 
-# set weights parameters
-
-value_weight = 0.4
+## set weights parameters
+valuation_weight = 0.4
 growth_weight = 0.4
-sentiment_weight = 0.2
+leverage_weight = 0.2
+
+## Plot the equities scores
+plot_equities_scores(equities, equities_names)
 
 
-# Define default values for weights
-# Set names of the asset classes
-names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 'Small Cap Value', 'International Growth', 'International Value', 'International Small Cap', 'Emerging Markets']
+## Backtesting on Equities
 
-### Scores of equity assets
+## Rolling Annual Return Backtesting
+plot_avg_return_heatmap(equities, equities_names)
 
-
-# Plot the scores
-plot_scores(equities)
-
-### Backtesting on Equities
-
-# Establish names of each column for returns backtest
-names = ["AVG Return of Large-Cap Growth(%)", "AVG Return of Large-Cap Value(%)", "AVG Return of Mid-Cap Growth(%)", "AVG Return of Mid-Cap Value(%)", "AVG Return of Small-Cap Growth(%)", "AVG Return of Small-Cap Value(%)" , "AVG Return of International Growth(%)", "AVG Return of International Value(%)", "AVG Return of International Small Cap(%)", "AVG Return of Emerging Markets(%)"]
+## Sharpe Ratio Backtesting
+plot_sharpe_ratio_heatmap(equities, equities_names)
 
 
-equities_results = calculate_return(equities, names)
-#I replaced "display()" with st.write() to see if it works
-#this worked because the way streamlit reads things is different than IPython.
-st.write(equities_results)
-st.write(plot_avg_return_heatmap_with_top3(equities_results))
-st.write(plot_avg_return_line_chart(equities_results))
+# Fixed Income Results
 
-## Forecasting Next Month's Return
+## Import fixed income data
 
-### Model 1: Random Forest
+core_bond = process_fi_data("streamlit/data/10y_monthly_core_bond.xlsx")
+emerging_bond = process_fi_data("streamlit/data/10y_monthly_emerging_bond.xlsx")
+floating_rate_bond = process_fi_data("streamlit/data/10y_monthly_floating_rate.xlsx")
+high_yield_bond = process_fi_data("streamlit/data/10y_monthly_high_yield.xlsx")
+short_term_bond = process_fi_data("streamlit/data/10y_monthly_short_term.xlsx")
+tips = process_fi_data("streamlit/data/10y_monthly_tips.xlsx")
 
+## Store the dataframes in a list
+fixed_income = [core_bond, emerging_bond, floating_rate_bond, high_yield_bond, short_term_bond, tips]
 
-def train_and_evaluate_rf(data, asset_name, target_column, test_size=0.2, random_state=42, n_estimators=100):
-    # Prepare the features (X) and the target (y)
-    X = data.drop(['Date', target_column], axis=1)
-    y = data[target_column]
+## Set names of the asset classes
+fixed_income_names = ['Core Bond', 'Emerging Bond', 'Floating Rate Bond', 'High Yield Bond', 'Short Term Bond', 'TIPS']
 
-    # Split the data into training and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+## Set default years parameter
+years = 10
 
-    # Create and train the model
-    rf_model = RandomForestRegressor(n_estimators=n_estimators, random_state=random_state)
-    rf_model.fit(X_train, y_train)
+## Plot the fixed income scores
+plot_fixed_income_scores(fixed_income, fixed_income_names)
 
-    # Predict using the latest data
-    latest_data = X.iloc[[-1]]  # Assuming the latest data is at the last row after sorting the Date column by ascending order
-    predicted_return = rf_model.predict(latest_data)
+## Backtesting on Fixed Income
 
-    # Calculate and print model accuracy on test set for reference
-    predictions_test = rf_model.predict(X_test)
-    rmse = np.sqrt(mean_squared_error(y_test, predictions_test))
-    rmse_rounded = round(rmse, 4)
-    print(f'Model RMSE on test set for {asset_name}: {rmse_rounded}')
+## Rolling Annual Return Backtesting
+plot_avg_return_heatmap(fixed_income, fixed_income_names)
 
-    return predicted_return[0]
-
-def forecast_returns_rf(dataframes, asset_names, target_column):
-    results = {}
-    for data, asset in zip(dataframes, asset_names):
-        predicted_return = train_and_evaluate_rf(data, asset, target_column)
-        results[asset] = predicted_return  # Store results using the asset name as the key
-        print(f'Predicted Return for {asset} Next Month: {predicted_return:.2f}%\n')
-
-    return results
-
-### Results
-
-# Target column name
-target_column = 'Monthly Return(%)'
-
-# Assuming 'large_cap_growth', 'large_cap_value', etc., are DataFrame variables containing your data
-dataframes = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, small_cap_growth, small_cap_value]
-asset_names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 'Small Cap Value']
-
-# Forecast returns for all assets
-forecast_results = forecast_returns_rf(dataframes, asset_names, target_column)
-
-### Model 2: Stacked Random Forest Model via SVR
-
-def train_and_evaluate_svr(data, asset_name, target_column, test_size=0.2, random_state=42, n_estimators=100):
-    # Prepare the features (X) and the target (y)
-    X = data.drop(['Date', target_column], axis=1)
-    y = data[target_column]
-
-    # Split the data into training and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
-
-    # Define the base models
-    base_models = [
-        ('rf1', RandomForestRegressor(n_estimators=100, random_state=random_state)),
-        ('rf2', RandomForestRegressor(n_estimators=100, random_state=random_state))
-    ]
-
-    # Define the meta-model
-    meta_model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=1, random_state=0, loss='squared_error')
-
-    # Define the stacking regressor
-    stacking_model = StackingRegressor(estimators=base_models, final_estimator=meta_model)
-
-    # Train the stacking regressor
-    stacking_model.fit(X_train, y_train)
-
-    # Predict using the latest data
-    latest_data = X.iloc[[-1]]  #  the latest data is at the last row after sorting the Date column by ascending order
-    predicted_return = stacking_model.predict(latest_data)
-
-    # Calculate and print model accuracy on test set for reference
-    predictions_test =  stacking_model.predict(X_test)
-    rmse = np.sqrt(mean_squared_error(y_test, predictions_test))
-    rmse_rounded = round(rmse, 4)
-    print(f'Model RMSE on test set for {asset_name}: {rmse_rounded}')
-
-    return predicted_return[0]
-
-def forecast_returns_svr(dataframes, asset_names, target_column):
-    results = {}
-    for data, asset in zip(dataframes, asset_names):
-        predicted_return = train_and_evaluate_svr(data, asset, target_column)
-        results[asset] = predicted_return  # Store results using the asset name as the key
-        print(f'Predicted Return for {asset} Next Month: {predicted_return:.2f}%\n')
-
-    return results
-
-# Target column name
-target_column = 'Monthly Return(%)'
-
-# Assuming 'large_cap_growth', 'large_cap_value', etc., are DataFrame variables containing your data
-dataframes = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, small_cap_growth, small_cap_value]
-asset_names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 'Small Cap Value']
-
-# Forecast returns for all assets
-forecast_results = forecast_returns_svr(dataframes, asset_names, target_column)
-
-# Fixed Income
-## Macro- Indicators
+## Sharpe Ratio Backtesting
+plot_sharpe_ratio_heatmap(fixed_income, fixed_income_names)
 
 
-start_date = '2002-01-01'  # 20 years ago
-end_date = '2024-04-17'
+# Equities Ratios Visualization
 
-# Define the ticker symbol for the yield curve data
-tickers = ['DGS1','DGS3','DGS10','DGS20']
+## This is a configurable plot that can plot the average ratio of any column between all the equities
+def plot_equities_valuation(df_list, df_names, ratio, timeframe_years=None):
+    data = []
+    for df, name in zip(df_list, df_names):
+        if timeframe_years:
+            df_filtered = df[df['Date'] >= pd.to_datetime('today') - pd.DateOffset(years=timeframe_years)]
+            avg_ratio = df_filtered[ratio].mean()
+        else:
+            avg_ratio = df[ratio].mean()
+        data.append({'Asset Class': name, 'Average Ratio': avg_ratio})
 
-yield_curve_data = pd.DataFrame()
-for ticker in tickers:
-    data = pdr.get_data_fred(ticker, start=start_date, end=end_date)
-    data_monthly = data.resample('M').last()
-    yield_curve_data[ticker] = data_monthly[ticker]
+    df_temp = pd.DataFrame(data)  
+    df_temp = df_temp.sort_values(by='Average Ratio', ascending=True)  
 
-# Print the first few rows of the downloaded data
-yield_curve_data.tail()
+    # Updated Color Logic (correcting order for ascending sort)
+    df_temp['color'] = 'Other Scores' # Default color
+    df_temp.iloc[-3:, df_temp.columns.get_loc('color')] = ['Third Highest Score', 'Second Highest Score', 'Highest Score'] 
+    
+    fig = px.bar(df_temp, x='Average Ratio', y='Asset Class', color='color', orientation='h',
+                 title=f"Average {ratio} Valuation (Last {timeframe_years} Years)" if timeframe_years else f"Average {ratio} Valuation",
+                 labels={'x': ratio, 'y': 'Asset Class'},
+                 color_discrete_map={'Highest Score': 'navy', 'Second Highest Score': 'royalblue', 
+                 'Third Highest Score': 'skyblue', 'Other Scores': 'lightgray'})
+    fig.show()
 
-inflation = pdr.get_data_fred('CPIAUCNS', start=start_date, end=end_date)
-inflation = inflation.resample('M').last()
-inflation['YoY Inflation Rate (%)'] = inflation['CPIAUCNS'].pct_change(12) * 100
+# Fixed Income Duration Visualization
 
-inflation.tail()
+## This function plots all the fixed income's yield vs duration over a specified year parameter
+## Can be a useful visualization tool of the fixed income landscape
+def plot_yield_duration(df_list, df_names, indicator, time_frame_years):
+    fig = go.Figure()  # Using graph_objects for more flexibility
 
+    for df, name in zip(df_list, df_names):
+        # Filter for timeframe
+        df_filtered = df[df['Date'] >= pd.to_datetime('today') - pd.DateOffset(years=time_frame_years)]
+        fig.add_trace(go.Scatter(
+            x=df_filtered['Index OAD'],  # Using OAD to Treasury
+            y=df_filtered[indicator], 
+            mode='markers',
+            name=name
+        ))
+
+    fig.update_layout(title= indicator+" vs. Duration over the Last "+str(time_frame_years)+" Years",
+                      xaxis_title='Option Adjusted Duration',
+                      yaxis_title=indicator)
+    fig.show()
+
+## Yield vs Duration Table Visualization
+def plot_yield_duration_table(df_list, df_names, timeframe_years):
+    data = []
+    for df, name in zip(df_list, df_names):
+        if timeframe_years:
+            df_filtered = df[df['Date'] >= pd.to_datetime('today') - pd.DateOffset(years=timeframe_years)]
+            avg_yield = df_filtered['Index Yield to Maturity'].mean()
+            avg_duration = df_filtered['Index OAD'].mean()
+        else:
+            avg_yield = df['Index Yield to Maturity'].mean()
+            avg_duration = df['Index OAD'].mean()
+        data.append({'Asset Class': name, 'Avg. Yield': avg_yield, 'Avg. Duration': avg_duration})
+
+    df_results = pd.DataFrame(data)
+    df_results = df_results.sort_values(by='Avg. Yield', ascending=False)  # Sort by yield
+
+    print(df_results.to_string(index=False))  # Improved table formatting (optional)
+
+
+### Below this is streamlit dashboard ###
+
+# Initialize session state for weights
+if 'valuation_weight' not in st.session_state:
+    st.session_state['valuation_weight'] = 0.4
+if 'growth_weight' not in st.session_state:
+    st.session_state['growth_weight'] = 0.4
+if 'leverage_weight' not in st.session_state:
+    st.session_state['leverage_weight'] = 0.2
+
+# Function to validate weights
 def validate_weights():
-    total = st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight
+    total = st.session_state.valuation_weight + st.session_state.growth_weight + st.session_state.leverage_weight
     if total != 1.0:
         diff = 1.0 - total
         st.session_state.sentiment_weight += diff
         st.error("The total of weights has been adjusted to 1.0 by modifying the sentiment weight.")
-#Below this is streamlit stuff
 
+# Define file processing and plotting functions here...
 
-## This is the new streamlit layout, everything above is the model code##
-tab1, tab2, tab3, tab4 = st.tabs(["Asset Scores", "🗃 settings", "EDA", "📈 Charts"])
-###everything between this and the below ### comment is in tab 1.
-with tab1:
+# Load and process data
+equities_data_files = [
+    "streamlit/data/RLG_10y_monthly.xlsx", "streamlit/data/RLV_10y_monthly.xlsx",
+    "streamlit/data/RDG_10y_monthly.xlsx", "streamlit/data/RMV_10y_monthly.xlsx",
+    "streamlit/data/RUO_10y_monthly.xlsx", "streamlit/data/RUJ_10y_monthly.xlsx",
+    "streamlit/data/MXEA000G_10y_monthly.xlsx", "streamlit/data/MXEA000V_10y_monthly.xlsx",
+    "streamlit/data/MXEF_10y_monthly.xlsx", "streamlit/data/SBERWUU_10y_monthly.xlsx"
+]
 
-# years determines the timeframe of the data, i.e. the last 5 years, 10 years, etc.
-    with st.popover("Edit Timeframe and Weights"):
-        years = st.slider(
-            "Select the number of years:",
-            min_value=5,  
-            max_value=20,  
-            value=10,  
-            step=5  
-        )
-        if 'value_weight' not in st.session_state:
-            st.session_state['value_weight'] = 0.4
-        if 'growth_weight' not in st.session_state:
-            st.session_state['growth_weight'] = 0.4
-        if 'sentiment_weight' not in st.session_state:
-            st.session_state['sentiment_weight'] = 0.2
+equities_names = [
+    'Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 
+    'Small Cap Value', 'International Growth', 'International Value', 'Emerging Markets Equity', 
+    'Small Cap International'
+]
 
-# Creating number inputs for weights
-        st.number_input("Value Weight", min_value=0.0, max_value=1.0, value=st.session_state.value_weight, key='value_weight', on_change=validate_weights)
+equities = [process_equities_data(file) for file in equities_data_files]
+
+fixed_income_data_files = [
+    "streamlit/data/10y_monthly_core_bond.xlsx", "streamlit/data/10y_monthly_emerging_bond.xlsx",
+    "streamlit/data/10y_monthly_floating_rate.xlsx", "streamlit/data/10y_monthly_high_yield.xlsx",
+    "streamlit/data/10y_monthly_short_term.xlsx", "streamlit/data/10y_monthly_tips.xlsx"
+]
+
+fixed_income_names = [
+    'Core Bond', 'Emerging Bond', 'Floating Rate Bond', 'High Yield Bond', 
+    'Short Term Bond', 'TIPS'
+]
+
+fixed_income = [process_fi_data(file) for file in fixed_income_data_files]
+
+# Streamlit dashboard layout
+if __name__ == '__main__':
+    st.title('Financial Data Visualization and Backtesting')
+    tab1, tab2, tab3, tab4 = st.tabs(["Asset Scores", "🗃 Settings", "EDA", "📈 Charts"])
+
+    # Tab 1: Asset Scores
+    with tab1:
+        st.header("Asset Scores")
+        years = st.slider("Select the number of years:", min_value=5, max_value=10, value=10, step=5)
+
+        st.subheader("Equity Asset Scores")
+        equities_figs = plot_fixed_income_scores(equities, equities_names)
+        for fig in equities_figs:
+            st.plotly_chart(fig)
+
+        st.subheader("Fixed Income Asset Scores")
+        fixed_income_figs = plot_fixed_income_scores(fixed_income, fixed_income_names)
+        for fig in fixed_income_figs:
+            st.plotly_chart(fig)
+
+    # Tab 2: Settings
+    with tab2:
+        st.header("Settings")
+        st.subheader("Adjust Weights")
+        st.number_input("Valuation Weight", min_value=0.0, max_value=1.0, value=st.session_state.valuation_weight, key='valuation_weight', on_change=validate_weights)
         st.number_input("Growth Weight", min_value=0.0, max_value=1.0, value=st.session_state.growth_weight, key='growth_weight', on_change=validate_weights)
-        st.number_input("Sentiment Weight", min_value=0.0, max_value=1.0, value=st.session_state.sentiment_weight, key='sentiment_weight', on_change=validate_weights)
+        st.number_input("Leverage Weight", min_value=0.0, max_value=1.0, value=st.session_state.leverage_weight, key='leverage_weight', on_change=validate_weights)
 
-# Displaying the current weights and their sum
-        st.write(f"Total: {st.session_state.value_weight + st.session_state.growth_weight + st.session_state.sentiment_weight}")
+        st.write(f"Total: {st.session_state.valuation_weight + st.session_state.growth_weight + st.session_state.leverage_weight}")
 
-    fig = plot_scores(equities)
-    st.plotly_chart(fig)
+    # Tab 3: EDA (Exploratory Data Analysis)
+    with tab3:
+        st.header("Exploratory Data Analysis")
+        # Add EDA plots and tables here
 
-    # Another tab for displaying something else, e.g., raw data or different analysis
-with tab2:
-    st.write("This tab can display data or other information.")
-    st.write("You can add more tabs as needed.")
+    # Tab 4: Charts
+    with tab4:
+        st.header("Charts")
+        st.subheader("Rolling Annual Return Backtesting")
+        return_heatmap_fig = plot_avg_return_heatmap(equities, equities_names)
+        st.pyplot(return_heatmap_fig)
+
+        st.subheader("Sharpe Ratio Backtesting")
+        sharpe_heatmap_fig = plot_sharpe_ratio_heatmap(equities, equities_names)
+        st.pyplot(sharpe_heatmap_fig)
+
+        st.subheader("Fixed Income Yield vs Duration")
+        yield_duration_fig = plot_yield_duration(fixed_income, fixed_income_names, 'Index Yield to Maturity', years)
+        st.plotly_chart(yield_duration_fig)
+
+        st.subheader("Fixed Income Yield vs Duration Table")
+        yield_duration_table_fig = plot_yield_duration_table(fixed_income, fixed_income_names, years)
+        st.pyplot(yield_duration_table_fig)
 
 
 
-
-
-
-
-##Below this line is the Origional dashboard ### 
+### Below this line is the Origional dashboard ### 
 
 import streamlit as st
 from datetime import datetime

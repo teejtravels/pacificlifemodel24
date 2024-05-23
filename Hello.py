@@ -943,31 +943,3 @@ with st.container():
     with metric_cols[1]:
         metric2 = 456  # Placeholder for actual metrics calculation
         st.metric(label="investment score2", value=55, delta=-33, delta_color="off ")
-# Check if files have been uploaded and asset classes selected
-if uploaded_files and selected_classes:
-    for uploaded_file in uploaded_files:
-        if any(selected_class in uploaded_file.name.lower() for selected_class in selected_classes):
-            df = pd.read_csv(uploaded_file)
-            df['Date'] = pd.to_datetime(df['Date'])  # Ensure date column is datetime
-            dfs[uploaded_file.name] = df
-
-    cols = st.columns(len(dfs)+1)
-    for idx, (filename, df) in enumerate(dfs.items()):
-        with cols[idx]:
-            pe_ratio_plot(df, filename)  # Call to the newly named function
-else:
-    st.write("Please select at least one asset class and upload the corresponding CSV files in the sidebar.")
-
-# Display metrics outside of the main data processing loop
-# with st.container():
-#     metric_col = cols[-1]
-#     st.header("Metrics")
-#     metric1 = 123  # Placeholder for actual metrics calculation
-#     metric2 = 456  # Placeholder for actual metrics calculation
-#     st.metric(label="investment score",value=4, delta=-0.5,
-#     delta_color="inverse")
-#     st.metric( label="investment score2", value=55, delta=-33,
-#     delta_color="off ")
-
-
-## goal is to have the colors and layout by 26th 

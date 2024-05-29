@@ -5,4 +5,8 @@ We developed a model to analyze the different indicators of different asset clas
 
 We then integrated the financial modeling into streamlit to allow access via a webapp to create a dynamic dashboard using python and not something expensive like tableau or powerbi. 
 
+The app is deployed using streamlit.io and can be found here: 
+https://pacificlifemodel24uci.streamlit.app/
+
+
 Project team: Vincent, Casey, TJ, Bangyang, and Veronica. 

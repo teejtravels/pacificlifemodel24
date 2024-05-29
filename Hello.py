@@ -596,34 +596,6 @@ def plot_sharpe_ratio_heatmap(df_list, names):
     return fig
 
 
-categories = {
-    "RLG": "large_cap_growth",
-    "RLV": "large_cap_value",
-    "RDG": "mid_cap_growth",
-    "RMV": "mid_cap_value",
-    "RUO": "small_cap_growth",
-    "RUJ": "small_cap_value",
-    "MXEA000G": "international_growth",
-    "MXEA000V": "international_value",
-    "SBERWUU": "international_small_cap",
-    "MXEF": "emerging_markets"
-}
-
-uploaded_file = st.sidebar.file_uploader("Upload to replace equity data:", type=['xlsx'])
-if uploaded_file:
-    file_category = None
-    # Determine which category the file belongs to based on its name
-    for key, value in categories.items():
-        if key in uploaded_file.name:
-            file_category = value
-            break
-    
-    if file_category:
-        # Process and update the specific category data
-        equity_data[file_category] = process_data(uploaded_file)
-        st.success(f"Updated data for {file_category}.")
-    else:
-        st.error("The uploaded file does not match any recognized category.")
 
 #Bangyangs updates above this line
 
@@ -767,6 +739,34 @@ fixed_income = [core_bond, emerging_bond, floating_rate_bond, high_yield_bond, s
 ## Set names of the asset classes
 fixed_income_names = ['Core Bond', 'Emerging Bond', 'Floating Rate Bond', 'High Yield Bond', 'Short Term Bond', 'TIPS']
 
+#This section defines the upload file function. 
+def upload_file(file, file_type):
+    if file is not None:
+        if file_type == "equity":
+            return process_equities_data(file)
+        elif file_type == "fixed_income":
+            return process_fi_data(file)
+    else:
+        st.warning(f"Please upload a {file_type} file.")
+    return None
+
+#this section is calls the upload file in the sidebar
+with st.sidebar:
+    # Upload Equity Files
+    st.header("Upload Equity Data Files")
+    equity_files = {}
+    equity_names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 'Small Cap Value', 'International Growth', 'International Value', 'Emerging Markets Equity', 'Small Cap International']
+    for equity in equity_names:
+        file = st.file_uploader(f"Upload {equity} Data", type=["xlsx"], key=equity)
+        equity_files[equity] = upload_file(file, "equity")
+
+    # Upload Fixed Income Files
+    st.header("Upload Fixed Income Data Files")
+    fi_files = {}
+    fi_names = ['Core Bond', 'Emerging Bond', 'Floating Rate Bond', 'High Yield Bond', 'Short Term Bond', 'TIPS']
+    for fi in fi_names:
+        file = st.file_uploader(f"Upload {fi} Data", type=["xlsx"], key=fi)
+        fi_files[fi] = upload_file(file, "fixed_income")
 
 # Streamlit dashboard layout
 if __name__ == '__main__':
@@ -853,7 +853,7 @@ if __name__ == '__main__':
     # Tab 3: Backtesting
     with tab3:
         
-        st.header("Backtesting")
+        #st.header("Backtesting")
         #name the columns so we can nest the headings and plots inthem
         coleq, colfi = st.columns(2)
 

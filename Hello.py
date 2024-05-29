@@ -455,7 +455,7 @@ def plot_fixed_income_scores(data, names):
                      color_discrete_map={'Highest Score': 'navy', 'Second Highest Score': 'royalblue', 'Third Highest Score': 'skyblue', 'Other Scores': 'lightgray'},
                      text=scores_df[category].round(2))
 
-        figures.append(fig)  # Add the figure to the list
+        figures.append(st.plotly_chart(fig))  # Add the figure to the list
 
     return figures  # Return the list of figures, i.e. figures[0] for Value, figures[1] for Volatility, etc.
 
@@ -593,7 +593,6 @@ def plot_sharpe_ratio_heatmap(df_list, names):
 #    "SBERWUU": "international_small_cap",
 #    "MXEF": "emerging_markets"
 #}
-
 #uploaded_file = st.sidebar.file_uploader("Upload to replace equity data:", type=['xlsx'])
 
 #if uploaded_file:

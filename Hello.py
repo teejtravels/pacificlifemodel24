@@ -807,8 +807,8 @@ if __name__ == '__main__':
                 with tabcol1:
                     st.plotly_chart(fig, use_container_width=True)
             else:
-            with tabcol2:
-                st.plotly_chart(fig, use_container_width=True)
+                with tabcol2:
+                    st.plotly_chart(fig, use_container_width=True)
         #this version will generate plots in a line.        #
         #for fig in equities_figs:
         #    st.plotly_chart(fig, use_container_width=True)

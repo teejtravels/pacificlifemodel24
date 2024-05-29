@@ -740,33 +740,48 @@ fixed_income = [core_bond, emerging_bond, floating_rate_bond, high_yield_bond, s
 fixed_income_names = ['Core Bond', 'Emerging Bond', 'Floating Rate Bond', 'High Yield Bond', 'Short Term Bond', 'TIPS']
 
 #This section defines the upload file function. 
-def upload_file(file, file_type):
-    if file is not None:
-        if file_type == "equity":
-            return process_equities_data(file)
-        elif file_type == "fixed_income":
-            return process_fi_data(file)
-    else:
-        st.warning(f"Please upload a {file_type} file.")
-    return None
 
-#this section is calls the upload file in the sidebar
+# Define paths to existing files
+equity_files_paths = {
+    'Large Cap Growth': "streamlit/data/RLG_10y_monthly.xlsx",
+    'Large Cap Value': "streamlit/data/RLV_10y_monthly.xlsx",
+    'Mid Cap Growth': "streamlit/data/RDG_10y_monthly.xlsx",
+    'Mid Cap Value': "streamlit/data/RMV_10y_monthly.xlsx",
+    'Small Cap Growth': "streamlit/data/RUO_10y_monthly.xlsx",
+    'Small Cap Value': "streamlit/data/RUJ_10y_monthly.xlsx",
+    'International Growth': "streamlit/data/MXEA000G_10y_monthly.xlsx",
+    'International Value': "streamlit/data/MXEA000V_10y_monthly.xlsx",
+    'Emerging Markets Equity': "streamlit/data/MXEF_10y_monthly.xlsx",
+    'Small Cap International': "streamlit/data/SBERWUU_10y_monthly.xlsx"
+}
+
+# Define a dictionary to hold uploaded data
+uploaded_equity_data = {}
+
+# Set names of the asset classes
+equities_names = list(equity_files_paths.keys())
+
+# Create file uploaders for each equity type
 with st.sidebar:
-    # Upload Equity Files
-    st.header("Upload Equity Data Files")
-    equity_files = {}
-    equity_names = ['Large Cap Growth', 'Large Cap Value', 'Mid Cap Growth', 'Mid Cap Value', 'Small Cap Growth', 'Small Cap Value', 'International Growth', 'International Value', 'Emerging Markets Equity', 'Small Cap International']
-    for equity in equity_names:
-        file = st.file_uploader(f"Upload {equity} Data", type=["xlsx"], key=equity)
-        equity_files[equity] = upload_file(file, "equity")
+    with st.popover("Upload New Equity Data Files Here"):
+        st.header("Upload New Equity Data Files")
+        for name in equities_names:
+            file = st.file_uploader(f"Upload {name} Data", type=["xlsx"], key=name)
+            if file is not None:
+                # Process and store the uploaded file
+                uploaded_equity_data[name] = process_equities_data(file)
+                # Save the uploaded file to replace the existing one
+                with open(equity_files_paths[name], 'wb') as f:
+                    f.write(file.getbuffer())
+                st.success(f"{name} data has been successfully uploaded and replaced.")
 
-    # Upload Fixed Income Files
-    st.header("Upload Fixed Income Data Files")
-    fi_files = {}
-    fi_names = ['Core Bond', 'Emerging Bond', 'Floating Rate Bond', 'High Yield Bond', 'Short Term Bond', 'TIPS']
-    for fi in fi_names:
-        file = st.file_uploader(f"Upload {fi} Data", type=["xlsx"], key=fi)
-        fi_files[fi] = upload_file(file, "fixed_income")
+        # Load and display the updated dataframes
+        if uploaded_equity_data:
+            st.header("Updated Equities Data")
+            for name, df in uploaded_equity_data.items():
+                st.write(f"**{name}**")
+                st.dataframe(df)
+
 
 # Streamlit dashboard layout
 if __name__ == '__main__':

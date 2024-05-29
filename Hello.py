@@ -708,18 +708,18 @@ emerging_markets_equity = process_equities_data("streamlit/data/MXEF_10y_monthly
 small_cap_int = process_equities_data("streamlit/data/SBERWUU_10y_monthly.xlsx")
 
 #Fuction to replace existing files
-categories = {
-    "RLG": "large_cap_growth",
-    "RLV": "large_cap_value",
-    "RDG": "mid_cap_growth",
-    "RMV": "mid_cap_value",
-    "RUO": "small_cap_growth",
-    "RUJ": "small_cap_value",
-    "MXEA000G": "international_growth",
-    "MXEA000V": "international_value",
-    "SBERWUU": "international_small_cap",
-    "MXEF": "emerging_markets"
-}
+#categories = {
+ #   "RLG": "large_cap_growth",
+ #   "RLV": "large_cap_value",
+ #   "RDG": "mid_cap_growth",
+ #   "RMV": "mid_cap_value",
+ #   "RUO": "small_cap_growth",
+ #   "RUJ": "small_cap_value",
+ #   "MXEA000G": "international_growth",
+ #   "MXEA000V": "international_value",
+ #   "SBERWUU": "international_small_cap",
+ #   "MXEF": "emerging_markets"
+#}
 
 uploaded_file = st.sidebar.file_uploader("Upload to replace equity data:", type=['xlsx'])
 if uploaded_file:

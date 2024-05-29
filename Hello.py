@@ -775,7 +775,7 @@ if __name__ == '__main__':
     # Tab 1: Equities Scores
     with tab1:
         st.header("Equity Assets Analysis")
-        with st.popover("Edit Settings for analysis here"):
+        with st.popover("Edit Settings for Analysis Here"):
             st.subheader("Select the Number of Years")
             equities_years = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='equities_years')
         
@@ -818,7 +818,7 @@ if __name__ == '__main__':
     with tab2:
         st.header("Fixed Income Assets Analysis")
         
-        with st.popover(" Edit Settings for analysis here"):
+        with st.popover(" Edit Settings for Analysis Here"):
             st.subheader("Select the Number of Years")
             fi_years = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='fi_years')
 

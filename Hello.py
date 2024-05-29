@@ -855,7 +855,7 @@ if __name__ == '__main__':
         
         #st.header("Backtesting")
         #name the columns so we can nest the headings and plots inthem
-        coleq, colfi = st.columns(2)
+        #coleq, colfi = st.columns(2)
 
         with coleq:# anything tabbed under this goes in the first column
             st.subheader("Equities Backtesting")

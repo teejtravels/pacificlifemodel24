@@ -23,6 +23,7 @@ import plotly.graph_objects as go
 # Equities Functions
 
 ## Equities Data Preprocess Function
+st.set_page_config(layout="wide")
 
 def process_equities_data(file_name):
     """
@@ -772,95 +773,138 @@ fixed_income_names = ['Core Bond', 'Emerging Bond', 'Floating Rate Bond', 'High 
 if __name__ == '__main__':
     st.title('Pacific Life Asset Classes Dashboard')
     tab1, tab2, tab3, tab4 = st.tabs(["Equities Analysis", "Fixed Income Analysis", "Backtesting", "Further Analysis"])
-
     # Tab 1: Equities Scores
     with tab1:
         st.header("Equity Assets Analysis")
-
-        st.subheader("Select the Number of Years")
-        equities_years = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='equities_years')
+        with st.popover("Edit Settings for analaysis here"):
+            st.subheader("Select the Number of Years")
+            equities_years = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='equities_years')
         
-        st.subheader("Adjust Weights")
+            st.subheader("Adjust Weights")
         
-        # Use st.columns to arrange the weights side by side
-        col1, col2, col3 = st.columns(3)
+            # Use st.columns to arrange the weights side by side
+            col1, col2, col3 = st.columns(3)
 
-        with col1:
-            valuation_weight = st.number_input("Valuation Weight", min_value=0.0, max_value=1.0, value=st.session_state.get('valuation_weight', 0.33), key='valuation_weight', on_change=adjust_weights, args=('valuation_weight',))
+            with col1:
+                valuation_weight = st.number_input("Valuation Weight", min_value=0.0, max_value=1.0, value=st.session_state.get('valuation_weight', 0.33), key='valuation_weight', on_change=adjust_weights, args=('valuation_weight',))
 
-        with col2:
-            growth_weight = st.number_input("Growth Weight", min_value=0.0, max_value=1.0, value=st.session_state.get('growth_weight', 0.33), key='growth_weight', on_change=adjust_weights, args=('growth_weight',))
+            with col2:
+                growth_weight = st.number_input("Growth Weight", min_value=0.0, max_value=1.0, value=st.session_state.get('growth_weight', 0.33), key='growth_weight', on_change=adjust_weights, args=('growth_weight',))
 
-        with col3:
-            leverage_weight = st.number_input("Leverage Weight", min_value=0.0, max_value=1.0, value=st.session_state.get('leverage_weight', 0.34), key='leverage_weight', on_change=adjust_weights, args=('leverage_weight',))
+            with col3:
+                leverage_weight = st.number_input("Leverage Weight", min_value=0.0, max_value=1.0, value=st.session_state.get('leverage_weight', 0.34), key='leverage_weight', on_change=adjust_weights, args=('leverage_weight',))
 
-        st.write(f"Total: {st.session_state.valuation_weight + st.session_state.growth_weight + st.session_state.leverage_weight}")
+            st.write(f"Total: {st.session_state.valuation_weight + st.session_state.growth_weight + st.session_state.leverage_weight}")
 
         # Button to update plots
-        if st.button('Update Plots'):
-            st.subheader("Equity Asset Scores")
-            equities_figs = plot_equities_scores(equities, equities_names, equities_years)
-            for fig in equities_figs:
+        #if st.button('Update Plots'):
+        #no need for button. 
+        st.subheader("Equity Asset Scores")
+        equities_figs = plot_equities_scores(equities, equities_names, equities_years)
+        #this version will seperate the plots into two columns.
+        tabcol1,tabcol2 = st.columns(2)
+        for i, fig in enumerate(equities_figs):
+            if i % 2 == 0:
+                with tabcol1:
+                    st.plotly_chart(fig, use_container_width=True)
+        else:
+            with tabcol2:
                 st.plotly_chart(fig, use_container_width=True)
+        #this version will generate plots in a line.        #
+        #for fig in equities_figs:
+        #    st.plotly_chart(fig, use_container_width=True)
 
 
     # Tab 2: Fixed Income Scores
     with tab2:
         st.header("Fixed Income Assets Analysis")
-
-        st.subheader("Select the Number of Years")
-        fi_years = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='fi_years')
         
+        with st.popover(" Edit Settings for analysis here"):
+            st.subheader("Select the Number of Years")
+            fi_years = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='fi_years')
+
         st.subheader("Fixed Income Asset Scores")
         fixed_income_figs = plot_fixed_income_scores(fixed_income, fixed_income_names, fi_years)
-        for fig in fixed_income_figs:
-            st.plotly_chart(fig, use_container_width=True)
+        
+        #this generates columns based on number of figs:
+        #columns = st.columns(len(fixed_income_figs))
+
+        #this version seperates the plots into columnss based on number of figs       
+        #for col, fig in zip(columns, fixed_income_figs):
+         #   with col:
+         #       st.plotly_chart(fig, use_container_width=True)
+        
+        #this generates the columns for two columns
+        tab2col1, tab2col2, = st.columns(2)
+
+        #This version seperates the plots into two columns
+        for i, fig in enumerate(fixed_income_figs):
+            if i % 2 == 0:
+                with tab2col1:
+                    st.plotly_chart(fig, use_container_width=True)
+            else:
+                with tab2col2:
+                    st.plotly_chart(fig, use_container_width=True)
+       
+        #This version will generate plots in a line    
+        #for fig in fixed_income_figs:
+        #    st.plotly_chart(fig, use_container_width=True)
 
 
     # Tab 3: Backtesting
     with tab3:
+        
         st.header("Backtesting")
+        #name the columns so we can nest the headings and plots inthem
+        coleq, colfi = st.columns(2)
 
-        st.subheader("Equities Backtesting")
-        st.subheader("Average Annual Returns")
-        equities_returns_fig = plot_avg_return_heatmap(equities, equities_names)
-        st.pyplot(equities_returns_fig)
+        with coleq:# anything tabbed under this goes in the first column
+            st.subheader("Equities Backtesting")
+            st.subheader("Average Annual Returns")
+            equities_returns_fig = plot_avg_return_heatmap(equities, equities_names)
+            st.pyplot(equities_returns_fig)
 
-        st.subheader("Sharpe Ratio")
-        equities_sharpe_fig = plot_sharpe_ratio_heatmap(equities, equities_names)
-        st.pyplot(equities_sharpe_fig)
+            st.subheader("Sharpe Ratio")
+            equities_sharpe_fig = plot_sharpe_ratio_heatmap(equities, equities_names)
+            st.pyplot(equities_sharpe_fig)
 
-        st.subheader("Fixed Income Backtesting")
-        st.subheader("Average Annual Returns")
-        fi_return_fig = plot_avg_return_heatmap(fixed_income, fixed_income_names)
-        st.pyplot(fi_return_fig)
+        with colfi:#anything tabbed under this goes in the second column
+            st.subheader("Fixed Income Backtesting")
+            st.subheader("Average Annual Returns")
+            fi_return_fig = plot_avg_return_heatmap(fixed_income, fixed_income_names)
+            st.pyplot(fi_return_fig)
 
-        st.subheader("Sharpe Ratio")
-        fi_sharpe_fig = plot_sharpe_ratio_heatmap(fixed_income, fixed_income_names)
-        st.pyplot(fi_sharpe_fig)
+            st.subheader("Sharpe Ratio")
+            fi_sharpe_fig = plot_sharpe_ratio_heatmap(fixed_income, fixed_income_names)
+            st.pyplot(fi_sharpe_fig)
 
 
     # Tab 4: Further Analysis
     with tab4:
         st.header("Further Analysis")
+
         st.subheader("Equities Ratios Visualization")
         st.write("This is a configurable plot that can plot the average ratio of any column between all the equities.")
-        ratio = st.selectbox("Select a ratio to plot:", equities[0].columns, key='equities_select_ratio')
-        timeframe_years1 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years1')
+        with st.popover("change equity ratio settings here"):
+            ratio = st.selectbox("Select a ratio to plot:", equities[0].columns, key='equities_select_ratio')
+            timeframe_years1 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years1')
+       
         equity_valuation = plot_equities_valuation(equities, equities_names, ratio, timeframe_years1)
         st.plotly_chart(equity_valuation, use_container_width=True)
 
         st.subheader("Fixed Income Duration Visualization")
         st.write("This function plots all the fixed income's yield vs duration over a specified year parameter.")
         st.write("Can be a useful visualization tool of the fixed income landscape.")
-        timeframe_years2 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years2')
-        indicator = st.selectbox("Select an indicator to plot:", ['Index Yield to Maturity', 'Index Yield to Worst', 'Index OAS', 'Index OAD', 'Index OAC', 'Index Spread'], key='fixed_income_select')
+        with st.popover ("change FI duration settings here"): 
+            timeframe_years2 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years2')
+            indicator = st.selectbox("Select an indicator to plot:", ['Index Yield to Maturity', 'Index Yield to Worst', 'Index OAS', 'Index OAD', 'Index OAC', 'Index Spread'], key='fixed_income_select')
         yield_duration = plot_yield_duration(fixed_income, fixed_income_names, indicator, timeframe_years2)
-        st.plotly_chart(yield_duration, use_container_width=True)
+        st.plotly_chart(yield_duration, use_container_width=False)
 
         st.subheader("Yield vs Duration Table Visualization")
         st.write("This table shows the average yield and duration of each fixed income asset class over a specified year parameter.")
-        timeframe_years3 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years3')
-        yield_duration_table = plot_yield_duration_table(fixed_income, fixed_income_names, timeframe_years3)
+        with st.popover("change yield duration settings here"):   
+            timeframe_years3 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years3')
+            yield_duration_table = plot_yield_duration_table(fixed_income, fixed_income_names, timeframe_years3)
         st.write(yield_duration_table, use_container_width=True)
 

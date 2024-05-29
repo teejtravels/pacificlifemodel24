@@ -608,6 +608,8 @@ categories = {
     "SBERWUU": "international_small_cap",
     "MXEF": "emerging_markets"
 }
+# Initialize the equity_data dictionary
+equity_data = {value: None for value in categories.values()}
 
 uploaded_file = st.sidebar.file_uploader("Upload to replace equity data:", type=['xlsx'])
 if uploaded_file:

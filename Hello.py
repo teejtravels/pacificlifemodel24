@@ -884,7 +884,7 @@ if __name__ == '__main__':
 
         st.subheader("Equities Ratios Visualization")
         st.write("This is a configurable plot that can plot the average ratio of any column between all the equities.")
-        with st.popover("change equity ratio settings here"):
+        with st.popover("Change Equity Ratio Settings Here"):
             ratio = st.selectbox("Select a ratio to plot:", equities[0].columns, key='equities_select_ratio')
             timeframe_years1 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years1')
        
@@ -894,7 +894,7 @@ if __name__ == '__main__':
         st.subheader("Fixed Income Duration Visualization")
         st.write("This function plots all the fixed income's yield vs duration over a specified year parameter.")
         st.write("Can be a useful visualization tool of the fixed income landscape.")
-        with st.popover ("change FI duration settings here"): 
+        with st.popover ("Change Fixed Index Duration Settings Here"): 
             timeframe_years2 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years2')
             indicator = st.selectbox("Select an indicator to plot:", ['Index Yield to Maturity', 'Index Yield to Worst', 'Index OAS', 'Index OAD', 'Index OAC', 'Index Spread'], key='fixed_income_select')
         yield_duration = plot_yield_duration(fixed_income, fixed_income_names, indicator, timeframe_years2)
@@ -902,7 +902,7 @@ if __name__ == '__main__':
 
         st.subheader("Yield vs Duration Table Visualization")
         st.write("This table shows the average yield and duration of each fixed income asset class over a specified year parameter.")
-        with st.popover("change yield duration settings here"):   
+        with st.popover("Change Yield Duration Settings Here"):   
             timeframe_years3 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years3')
             yield_duration_table = plot_yield_duration_table(fixed_income, fixed_income_names, timeframe_years3)
         st.write(yield_duration_table, use_container_width=True)

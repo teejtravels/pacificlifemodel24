@@ -596,34 +596,6 @@ def plot_sharpe_ratio_heatmap(df_list, names):
     return fig
 
 
-categories = {
-    "RLG": "large_cap_growth",
-    "RLV": "large_cap_value",
-    "RDG": "mid_cap_growth",
-    "RMV": "mid_cap_value",
-    "RUO": "small_cap_growth",
-    "RUJ": "small_cap_value",
-    "MXEA000G": "international_growth",
-    "MXEA000V": "international_value",
-    "SBERWUU": "international_small_cap",
-    "MXEF": "emerging_markets"
-}
-
-uploaded_file = st.sidebar.file_uploader("Upload to replace equity data:", type=['xlsx'])
-if uploaded_file:
-    file_category = None
-    # Determine which category the file belongs to based on its name
-    for key, value in categories.items():
-        if key in uploaded_file.name:
-            file_category = value
-            break
-    
-    if file_category:
-        # Process and update the specific category data
-        equity_data[file_category] = process_data(uploaded_file)
-        st.success(f"Updated data for {file_category}.")
-    else:
-        st.error("The uploaded file does not match any recognized category.")
 
 #Bangyangs updates above this line
 
@@ -735,6 +707,36 @@ int_value = process_equities_data("streamlit/data/MXEA000V_10y_monthly.xlsx")
 emerging_markets_equity = process_equities_data("streamlit/data/MXEF_10y_monthly.xlsx")
 small_cap_int = process_equities_data("streamlit/data/SBERWUU_10y_monthly.xlsx")
 
+#Fuction to replace existing files
+categories = {
+    "RLG": "large_cap_growth",
+    "RLV": "large_cap_value",
+    "RDG": "mid_cap_growth",
+    "RMV": "mid_cap_value",
+    "RUO": "small_cap_growth",
+    "RUJ": "small_cap_value",
+    "MXEA000G": "international_growth",
+    "MXEA000V": "international_value",
+    "SBERWUU": "international_small_cap",
+    "MXEF": "emerging_markets"
+}
+
+uploaded_file = st.sidebar.file_uploader("Upload to replace equity data:", type=['xlsx'])
+if uploaded_file:
+    file_category = None
+    # Determine which category the file belongs to based on its name
+    for key, value in categories.items():
+        if key in uploaded_file.name:
+            file_category = value
+            break
+    
+    if file_category:
+        # Process and update the specific category data
+        equity_data[file_category] = process_data(uploaded_file)
+        st.success(f"Updated data for {file_category}.")
+    else:
+        st.error("The uploaded file does not match any recognized category.")
+        
 ## Store the dataframes in a list
 equities = [large_cap_growth, large_cap_value, mid_cap_growth, mid_cap_value, small_cap_growth, small_cap_value, int_growth, int_value, emerging_markets_equity, small_cap_int]
 

@@ -853,7 +853,7 @@ if __name__ == '__main__':
     # Tab 3: Backtesting
     with tab3:
         
-        st.header("Backtesting")
+        #st.header("Backtesting")
         #name the columns so we can nest the headings and plots inthem
         coleq, colfi = st.columns(2)
 

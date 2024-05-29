@@ -732,7 +732,7 @@ if uploaded_file:
     
     if file_category:
         # Process and update the specific category data
-        equity_data[file_category] = process_data(uploaded_file)
+        equity_data[file_category] = process_equities_data(uploaded_file)
         st.success(f"Updated data for {file_category}.")
     else:
         st.error("The uploaded file does not match any recognized category.")

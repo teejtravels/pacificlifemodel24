@@ -806,7 +806,7 @@ if __name__ == '__main__':
             if i % 2 == 0:
                 with tabcol1:
                     st.plotly_chart(fig, use_container_width=True)
-        else:
+            else:
             with tabcol2:
                 st.plotly_chart(fig, use_container_width=True)
         #this version will generate plots in a line.        #

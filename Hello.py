@@ -796,7 +796,7 @@ if selected_category == 'Equities':
             small_cap_int = new_data
 
         st.sidebar.success(f'{selected_equity} data has been updated.')
-
+        st.experimental_rerun()
 elif selected_category == 'Fixed Income':
     selected_fixed_income = st.sidebar.selectbox('Select Fixed Income Data to Replace', list(fixed_income_data.keys()))
     uploaded_file = st.sidebar.file_uploader('Upload a new file', type=['xlsx'])
@@ -820,7 +820,7 @@ elif selected_category == 'Fixed Income':
             tips = new_data
 
         st.sidebar.success(f'{selected_fixed_income} data has been updated.')
-
+        st.experimental_rerun()
 
 # Streamlit dashboard layout
 if __name__ == '__main__':

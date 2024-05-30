@@ -95,7 +95,7 @@ def calculate_valuation(data, years):
 
     # Calculate percentile of first value indicator (Price Earnings Ratio)
     last_pe = data['Price Earnings Ratio'].iloc[-1]
-    pe_percentile = stats.percentileofscore(data['Price Earnings Ratio'], last_pe, kind='rank',nan_policy='omit')
+    pe_percentile = 100 - stats.percentileofscore(data['Price Earnings Ratio'], last_pe, kind='rank',nan_policy='omit')
 
     # Calculate percentile of second value indicator (Price/Cash Flow)
     last_pcash = data['Price/Cash Flow'].iloc[-1]
@@ -938,7 +938,7 @@ if __name__ == '__main__':
         st.subheader("Equities Ratios Visualization")
         st.write("This is a configurable plot that can plot the average ratio of any column between all the equities.")
         with st.popover("Change Equity Ratio Settings Here"):
-            ratio = st.selectbox("Select a ratio to plot:", equities[0].columns, key='equities_select_ratio')
+            ratio = st.selectbox("Select a ratio to plot:", equities[0].drop('Date', axis=1).columns, key='equities_select_ratio')
             timeframe_years1 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years1')
        
         equity_valuation = plot_equities_valuation(equities, equities_names, ratio, timeframe_years1)

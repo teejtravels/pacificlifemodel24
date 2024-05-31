@@ -308,7 +308,7 @@ def calculate_return(df_list, names):
             filtered_df = df[(pd.to_datetime(df['Date']) > start_date) & (pd.to_datetime(df['Date']) <= latest_date)]
 
             # Calculate the average return for the current time frame using the 'Annual Return(%)' column
-            avg_return = round(filtered_df['Annual Return'].mean(), 2)
+            avg_return = round(filtered_df['Annual Return'].mean(), 4)
             returns.append(avg_return)
 
         # Append the calculated average returns for this dataset to the all_returns list
@@ -718,7 +718,7 @@ def plot_avg_return_heatmap_fi(df_list, names):
 
     # Create Heatmap using Seaborn
     fig, ax = plt.subplots(figsize=(10, 6))  
-    sns.heatmap(df_heatmap, annot=True, fmt='.2f', cmap='RdBu', cbar_kws={'label': 'Sharpe Ratio'}, ax=ax) 
+    sns.heatmap(df_heatmap, annot=True, fmt='.2%', cmap='RdBu', cbar_kws={'label': 'Average Return (%)'}, ax=ax) 
     ax.set_title('Average Annual Returns (Compounded) Across Timeframes')
     ax.set_xlabel('Timeframe (Years)') 
     ax.set_ylabel('Asset Class') 

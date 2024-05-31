@@ -280,10 +280,206 @@ def plot_equities_scores(data, names, years):
     
     return figs
 
+## Equities Backtesting Functions
+
+### Returns
+
+def calculate_return(df_list, names):
+    """Calculates average annual returns over specified timeframes.
+
+    Args:
+        df_list (list): A list of DataFrames containing the 'Annual Return' column.
+        timeframes (list): List of timeframes (in years) for average calculation.
+
+    Returns:
+        pd.DataFrame: DataFrame with average annual returns for each timeframe.
+    """
+
+    all_returns = []  # This will store the average returns for each dataset
+    time_frames = [1, 3, 5, 10]
+
+    for df in df_list:
+        returns = []  # This will store the average returns for the current dataset across time frames
+        latest_date = pd.to_datetime(df['Date']).max()
+
+        for years in time_frames:
+            start_date = latest_date - pd.DateOffset(years=years)
+            # Filter the DataFrame based on the time frame
+            filtered_df = df[(pd.to_datetime(df['Date']) > start_date) & (pd.to_datetime(df['Date']) <= latest_date)]
+
+            # Calculate the average return for the current time frame using the 'Annual Return(%)' column
+            avg_return = round(filtered_df['Annual Return'].mean(), 2)
+            returns.append(avg_return)
+
+        # Append the calculated average returns for this dataset to the all_returns list
+        all_returns.append(returns)
+
+    # Create DataFrame for visualization
+    results_df = pd.DataFrame(all_returns, index=names, columns=time_frames).transpose()
+
+    # Reset the index to make it a regular column and rename it to 'Timeframe(yr)'
+    results_df = results_df.reset_index().rename(columns={'index': 'Timeframe(yr)'})
+
+    return results_df
+
+
+def plot_avg_return_heatmap(df_list, names):
+    """Generates a heatmap of average annual returns."""
+    
+    results = calculate_return(df_list, names)
+
+    # Ensure 'Timeframe(yr)' is a column and not an index
+    if 'Timeframe(yr)' not in results.columns:
+        results = results.reset_index().rename(columns={'index': 'Timeframe(yr)'})
+        
+    df_heatmap = results.set_index('Timeframe(yr)').transpose()
+
+    # Create Heatmap using Seaborn
+    fig, ax = plt.subplots(figsize=(10, 6))  
+    sns.heatmap(df_heatmap, annot=True, fmt='.2%', cmap='RdBu', cbar_kws={'label': 'Average Return (%)'}, ax=ax) 
+    ax.set_title('Average Annual Returns Across Timeframes (Compounded)')  
+    ax.set_xlabel('Timeframe (Years)') 
+    ax.set_ylabel('Asset Class') 
+
+    return fig
+
+
+def get_highest_scoring_asset_class(data_list, names, time_frames=[1, 3, 5, 10]):
+    """Calculates the highest scoring asset class for each timeframe.
+
+    Args:
+        data_list (list): List of DataFrames containing the indicators.
+        names (list): List of names for the asset classes.
+        time_frames (list): List of timeframes to evaluate.
+
+    Returns:
+        pd.DataFrame: DataFrame with highest scoring asset class for each timeframe.
+    """
+    highest_scores = {years: {'Asset Class': None, 'Score': -float('inf')} for years in time_frames}
+
+    for years in time_frames:
+        for name, data in zip(names, data_list):
+
+            final_score = calculate_final_score(data, years)
+            if final_score > highest_scores[years]['Score']:
+                highest_scores[years] = {'Asset Class': name, 'Score': final_score}
+
+    return pd.DataFrame(highest_scores).T.reset_index().rename(columns={'index': 'Timeframe(yr)'})
+
+
+def plot_avg_return_heatmap_with_scores(df_list, names):
+    """Generates a heatmap of average annual returns and overlays highest scoring asset class."""
+    
+    # Calculate average returns
+    results = calculate_return(df_list, names)
+    
+    # Ensure 'Timeframe(yr)' is a column and not an index
+    if 'Timeframe(yr)' not in results.columns:
+        results = results.reset_index().rename(columns={'index': 'Timeframe(yr)'})
+        
+    df_heatmap = results.set_index('Timeframe(yr)').transpose()
+    
+    # Get highest scoring asset class for each timeframe
+    highest_scores = get_highest_scoring_asset_class(df_list, names)
+
+    # Create Heatmap (Seaborn for styling)
+    fig, ax = plt.subplots(figsize=(12, 8))
+    sns.heatmap(df_heatmap, annot=True, fmt='.2%', cmap='RdBu', cbar_kws={'label': 'Average Return (%)'}, ax=ax) 
+    plt.title('Average Annual Returns Across Timeframes (Compounded) with Highest Scoring Asset Class')  
+    plt.xlabel('Timeframe (Years)') 
+    plt.ylabel('Asset Class')
+
+    # Overlay highest scoring asset class for each timeframe
+    for idx, timeframe in highest_scores.iterrows():
+        timeframe_yr = timeframe['Timeframe(yr)']
+        asset_class = timeframe['Asset Class']
+        score = timeframe['Score']
+        
+        x = list(df_heatmap.columns).index(timeframe_yr)
+        y = list(df_heatmap.index).index(asset_class) + 0.5
+        
+        ax.text(x, y, f'{asset_class}\n(Score: {score:.2f})', 
+                horizontalalignment='center', 
+                verticalalignment='center', 
+                rotation=0,
+                bbox=dict(facecolor='white', alpha=0.7))
+
+    return fig
+
+
+### Using Sharpe Ratio
+
+def get_treasury_bill_rate():
+    # Get the current date
+    today = pd.to_datetime('today')
+    
+    # If today is a weekend (Saturday or Sunday), set the date to the last Friday
+    if today.weekday() >= 5:
+        last_trading_day = today - pd.Timedelta(days=today.weekday() - 4)
+    else:
+        last_trading_day = today
+    
+    # Attempt to download data until we get valid data (handles holidays and weekends)
+    while True:
+        tbill_data = yf.download("^IRX", start=last_trading_day, end=last_trading_day + pd.Timedelta(days=1))
+        if not tbill_data.empty:
+            tbill_rate = tbill_data['Close'].iloc[-1] / 100  # Convert percentage to decimal
+            return tbill_rate
+        last_trading_day -= pd.Timedelta(days=1)  # Move to the previous day
+
+
+def calculate_sharpe_ratio(df_list, names):
+    """Calculates Sharpe ratios over specified timeframes."""
+    all_sharpes = []  
+    time_frames = [1, 3, 5, 10]  # Keep consistent with return calculation
+
+    risk_free_rate = get_treasury_bill_rate()
+
+    for df in df_list:
+        sharpes = [] 
+        latest_date = pd.to_datetime(df['Date']).max()
+
+        for years in time_frames:
+            start_date = latest_date - pd.DateOffset(years=years)
+            filtered_df = df[(pd.to_datetime(df['Date']) > start_date) & (pd.to_datetime(df['Date']) <= latest_date)]
+            
+            returns = filtered_df['Annual Return']  
+            excess_return = returns - risk_free_rate
+            sharpe_ratio = round((excess_return.mean() / returns.std()) * np.sqrt(12), 2)  
+            sharpes.append(sharpe_ratio)
+
+        all_sharpes.append(sharpes)
+
+    results_df = pd.DataFrame(all_sharpes, index=names, columns=time_frames).transpose()
+    results_df = results_df.reset_index().rename(columns={'index': 'Timeframe(yr)'})
+    return results_df
+
+
+def plot_sharpe_ratio_heatmap(df_list, names):
+    """Generates a heatmap of Sharpe ratios."""
+    
+    results = calculate_sharpe_ratio(df_list, names)
+
+    # Ensure 'Timeframe(yr)' is a column and not an index
+    if 'Timeframe(yr)' not in results.columns:
+        results = results.reset_index().rename(columns={'index': 'Timeframe(yr)'})
+        
+    df_heatmap = results.set_index('Timeframe(yr)').transpose()
+
+    # Create Heatmap (Seaborn for styling)
+    fig, ax = plt.subplots(figsize=(10, 6))  
+    sns.heatmap(df_heatmap, annot=True, fmt='.2f', cmap='RdBu', cbar_kws={'label': 'Sharpe Ratio'}, ax=ax) 
+    ax.set_title('Sharpe Ratio Across Timeframes')
+    ax.set_xlabel('Timeframe (Years)') 
+    ax.set_ylabel('Asset Class') 
+    
+    return fig
+
 
 # Fixed Income Functions
 
 ## Fixed Income Data Preprocess Function
+
 def process_fi_data(file_name):
     """
     Process an Excel file of data for analysis.
@@ -463,38 +659,41 @@ def plot_fixed_income_scores(data, names, years):
     return figs  # Return the list of figures, i.e. figures[0] for Value, figures[1] for Volatility, etc.
 
 
-# Backtesting Functions
+## Fixed Income Backtesting Functions
 
-## Using Average Returns
+### Returns 
 
-def calculate_return(df_list, names):
-    """Calculates average annual returns over specified timeframes.
+def calculate_total_return_ytm(df_list, names):
+    """Calculates total returns over specified timeframes using YTM.
 
     Args:
-        df_list (list): A list of DataFrames containing the 'Annual Return' column.
-        timeframes (list): List of timeframes (in years) for average calculation.
+        df_list (list): A list of DataFrames containing the bond data.
+        names (list): List of names for the bond indexes.
 
     Returns:
-        pd.DataFrame: DataFrame with average annual returns for each timeframe.
+        pd.DataFrame: DataFrame with total returns for each timeframe.
     """
 
-    all_returns = []  # This will store the average returns for each dataset
+    all_returns = []  # This will store the total returns for each dataset
     time_frames = [1, 3, 5, 10]
 
     for df in df_list:
-        returns = []  # This will store the average returns for the current dataset across time frames
+        returns = []  # This will store the total returns for the current dataset across time frames
         latest_date = pd.to_datetime(df['Date']).max()
 
         for years in time_frames:
             start_date = latest_date - pd.DateOffset(years=years)
             # Filter the DataFrame based on the time frame
             filtered_df = df[(pd.to_datetime(df['Date']) > start_date) & (pd.to_datetime(df['Date']) <= latest_date)]
+            
+            # Calculate the average YTM over the period
+            avg_ytm = filtered_df['Index Yield to Maturity'].mean()
+            
+            # Calculate the total return based on average YTM
+            #total_return = (1 + avg_ytm / 100) ** years - 1
+            
+            returns.append(round(avg_ytm/100, 4))  # Convert to percentage and round
 
-            # Calculate the average return for the current time frame using the 'Annual Return(%)' column
-            avg_return = round(filtered_df['Annual Return'].mean(), 2)
-            returns.append(avg_return)
-
-        # Append the calculated average returns for this dataset to the all_returns list
         all_returns.append(returns)
 
     # Create DataFrame for visualization
@@ -506,10 +705,10 @@ def calculate_return(df_list, names):
     return results_df
 
 
-def plot_avg_return_heatmap(df_list, names):
-    """Generates a heatmap of average annual returns."""
+def plot_avg_return_heatmap_fi(df_list, names):
+    """Generates a heatmap of average annual returns using YTM."""
     
-    results = calculate_return(df_list, names)
+    results = calculate_total_return_ytm(df_list, names)
 
     # Ensure 'Timeframe(yr)' is a column and not an index
     if 'Timeframe(yr)' not in results.columns:
@@ -519,15 +718,15 @@ def plot_avg_return_heatmap(df_list, names):
 
     # Create Heatmap using Seaborn
     fig, ax = plt.subplots(figsize=(10, 6))  
-    sns.heatmap(df_heatmap, annot=True, fmt='.2%', cmap='RdBu', cbar_kws={'label': 'Average Return (%)'}, ax=ax) 
-    ax.set_title('Average Annual Returns Across Timeframes (Compounded)')  
+    sns.heatmap(df_heatmap, annot=True, fmt='.2f', cmap='RdBu', cbar_kws={'label': 'Sharpe Ratio'}, ax=ax) 
+    ax.set_title('Average Annual Returns (Compounded) Across Timeframes')
     ax.set_xlabel('Timeframe (Years)') 
     ax.set_ylabel('Asset Class') 
-
+    
     return fig
 
 
-## Using Sharpe Ratio
+### Using Sharpe Ratio
 
 def get_treasury_bill_rate():
     # Get the current date
@@ -548,7 +747,7 @@ def get_treasury_bill_rate():
         last_trading_day -= pd.Timedelta(days=1)  # Move to the previous day
 
 
-def calculate_sharpe_ratio(df_list, names):
+def calculate_sharpe_ratio_fi(df_list, names):
     """Calculates Sharpe ratios over specified timeframes."""
     all_sharpes = []  
     time_frames = [1, 3, 5, 10]  # Keep consistent with return calculation
@@ -561,11 +760,21 @@ def calculate_sharpe_ratio(df_list, names):
 
         for years in time_frames:
             start_date = latest_date - pd.DateOffset(years=years)
+            
+            # Filter the DataFrame based on the time frame
             filtered_df = df[(pd.to_datetime(df['Date']) > start_date) & (pd.to_datetime(df['Date']) <= latest_date)]
             
-            returns = filtered_df['Annual Return']  
-            excess_return = returns - risk_free_rate
-            sharpe_ratio = round((excess_return.mean() / returns.std()) * np.sqrt(12), 2)  
+            # Calculate the average YTM over the period (convert from percentage to decimal)
+            avg_ytm = filtered_df['Index Yield to Maturity'].mean() / 100
+            
+            # Convert to excess return (total return minus risk-free rate)
+            excess_return = avg_ytm - risk_free_rate
+            
+            # Calculate standard deviation of YTM returns (convert from percentage to decimal and annualize)
+            std_dev = (filtered_df['Index Yield to Maturity'] / 100).std() * np.sqrt(12) 
+            
+            # Calculate Sharpe ratio
+            sharpe_ratio = round(excess_return / std_dev, 2)
             sharpes.append(sharpe_ratio)
 
         all_sharpes.append(sharpes)
@@ -575,10 +784,10 @@ def calculate_sharpe_ratio(df_list, names):
     return results_df
 
 
-def plot_sharpe_ratio_heatmap(df_list, names):
+def plot_sharpe_ratio_heatmap_fi(df_list, names):
     """Generates a heatmap of Sharpe ratios."""
     
-    results = calculate_sharpe_ratio(df_list, names)
+    results = calculate_sharpe_ratio_fi(df_list, names)
 
     # Ensure 'Timeframe(yr)' is a column and not an index
     if 'Timeframe(yr)' not in results.columns:
@@ -586,19 +795,14 @@ def plot_sharpe_ratio_heatmap(df_list, names):
         
     df_heatmap = results.set_index('Timeframe(yr)').transpose()
 
-    # Create Heatmap using Seaborn
+    # Create Heatmap (Seaborn for styling)
     fig, ax = plt.subplots(figsize=(10, 6))  
     sns.heatmap(df_heatmap, annot=True, fmt='.2f', cmap='RdBu', cbar_kws={'label': 'Sharpe Ratio'}, ax=ax) 
-    ax.set_title('Sharpe Ratio Across Timeframes')  
+    ax.set_title('Sharpe Ratio Across Timeframes')
     ax.set_xlabel('Timeframe (Years)') 
     ax.set_ylabel('Asset Class') 
-
+    
     return fig
-
-
-
-#Bangyangs updates above this line
-
 
 
 # Equities Ratios Visualization
@@ -682,16 +886,27 @@ if 'leverage_weight' not in st.session_state:
 
 # Function to adjust weights
 def adjust_weights(changed_key):
-    total = st.session_state[changed_key]
+    if 'valuation_weight' in st.session_state and 'growth_weight' in st.session_state and 'leverage_weight' in st.session_state:
+        total = st.session_state.valuation_weight + st.session_state.growth_weight + st.session_state.leverage_weight
+        if total != 1:  # Ensure the total is 1
+            st.error("Weights must add up to 1.")
+            return
+    else:
+        return  # Exit if not all weights are set
+    
+    remaining_key = None
     if changed_key == 'valuation_weight':
-        st.session_state.growth_weight = (1 - total) / 2
-        st.session_state.leverage_weight = (1 - total) / 2
+        remaining_key = ['growth_weight', 'leverage_weight']
     elif changed_key == 'growth_weight':
-        st.session_state.valuation_weight = (1 - total) / 2
-        st.session_state.leverage_weight = (1 - total) / 2
+        remaining_key = ['valuation_weight', 'leverage_weight']
     elif changed_key == 'leverage_weight':
-        st.session_state.valuation_weight = (1 - total) / 2
-        st.session_state.growth_weight = (1 - total) / 2
+        remaining_key = ['valuation_weight', 'growth_weight']
+
+    if remaining_key:
+        remaining_total = 1 - st.session_state[changed_key]
+        st.session_state[remaining_key[0]] = remaining_total / 2
+        st.session_state[remaining_key[1]] = remaining_total / 2
+
 
 # Define file processing and plotting functions here...
 
@@ -908,26 +1123,35 @@ if __name__ == '__main__':
     with tab3:
         
         #name the columns so we can nest the headings and plots inthem
-        coleq, colfi = st.columns(2)
+        colreturns, colsharpe = st.columns(2)
 
-        with coleq:# anything tabbed under this goes in the first column
-            st.subheader("Equities Backtesting")
-            st.subheader("Average Annual Returns")
+        with colreturns:# anything tabbed under this goes in the first column
+            st.subheader("Equities Average Annual Returns")
             equities_returns_fig = plot_avg_return_heatmap(equities, equities_names)
             st.pyplot(equities_returns_fig)
+            
 
-            st.subheader("Sharpe Ratio")
+            st.subheader("Fixed Income Average Annual Returns")
+            fi_return_fig = plot_avg_return_heatmap_fi(fixed_income, fixed_income_names)
+            st.pyplot(fi_return_fig)
+            #this creates a popover button that runs the heatmap with scores overlay.
+            #this allows us to see the scores of the heatmap.
+            with st.popover("Display Equities returns with scores"):
+                equities_returns_fig_scores = plot_avg_return_heatmap_with_scores(equities, equities_names)
+                st.pyplot(equities_returns_fig_scores)
+
+            
+
+        with colsharpe:#anything tabbed under this goes in the second column
+            
+            st.subheader("Equities Sharpe Ratio")
             equities_sharpe_fig = plot_sharpe_ratio_heatmap(equities, equities_names)
             st.pyplot(equities_sharpe_fig)
 
-        with colfi:#anything tabbed under this goes in the second column
-            st.subheader("Fixed Income Backtesting")
-            st.subheader("Average Annual Returns")
-            fi_return_fig = plot_avg_return_heatmap(fixed_income, fixed_income_names)
-            st.pyplot(fi_return_fig)
-
-            st.subheader("Sharpe Ratio")
-            fi_sharpe_fig = plot_sharpe_ratio_heatmap(fixed_income, fixed_income_names)
+            #st.subheader(" ")#this is a spacer needed if we plot the heatmap with scores
+            #st.subheader(" ")#this is a spacer needed if we plot the heatmap with scores
+            st.subheader("Fixed Income Sharpe Ratio")
+            fi_sharpe_fig = plot_sharpe_ratio_heatmap_fi(fixed_income, fixed_income_names)
             st.pyplot(fi_sharpe_fig)
 
 
@@ -959,4 +1183,3 @@ if __name__ == '__main__':
             timeframe_years3 = st.slider("Select the number of years:", min_value=0, max_value=10, value=10, step=1, key='timeframe_years3')
             yield_duration_table = plot_yield_duration_table(fixed_income, fixed_income_names, timeframe_years3)
         st.write(yield_duration_table, use_container_width=True)
-

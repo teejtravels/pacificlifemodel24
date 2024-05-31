@@ -893,20 +893,6 @@ def adjust_weights(changed_key):
             return
     else:
         return  # Exit if not all weights are set
-    
-#    remaining_key = None
-#    if changed_key == 'valuation_weight':
-#        remaining_key = ['growth_weight', 'leverage_weight']
-#    elif changed_key == 'growth_weight':
-#        remaining_key = ['valuation_weight', 'leverage_weight']
-#    elif changed_key == 'leverage_weight':
-#        remaining_key = ['valuation_weight', 'growth_weight']#
-
-#    if remaining_key:
-#        remaining_total = 1 - st.session_state[changed_key]
-#        st.session_state[remaining_key[0]] = remaining_total / 2
-#        st.session_state[remaining_key[1]] = remaining_total / 2
-
 
 # Define file processing and plotting functions here...
 
